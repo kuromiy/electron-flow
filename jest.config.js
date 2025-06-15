@@ -34,6 +34,10 @@ module.exports = {
       },
     }],
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(chalk|ora)/)',
+  ],
+  extensionsToTreatAsEsm: ['.ts'],
   globals: {
     'ts-jest': {
       isolatedModules: true,
