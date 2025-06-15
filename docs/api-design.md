@@ -280,7 +280,7 @@ declare global {
 }
 ```
 
-## 5. electron-flowランタイムの型定義
+## 5. electron-flowランタイムの型定義（electron-flowが提供）
 
 ```typescript
 // electron-flow/runtime/error.ts
