@@ -11,7 +11,8 @@
       "Bash(npm test:*)",
       "Bash(npm install)",
       "Bash(chmod:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": []
   }
