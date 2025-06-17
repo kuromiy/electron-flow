@@ -1,35 +1,35 @@
 # electron-flow
 
-Type-safe IPC code generator for Electron applications with Result type pattern and user-defined error handling.
+Electronアプリケーション用の型安全なIPCコードジェネレーター。Resultタイプパターンとユーザー定義エラーハンドリングを提供します。
 
-## Features
+## 特徴
 
-- 🔒 **Type-safe IPC communication** - Full TypeScript support with automatic type inference
-- 🎯 **Result type pattern** - Explicit error handling without exceptions
-- 🛠️ **User-defined validation** - Complete control over request validation with Zod
-- 🎨 **Context-aware error handling** - Access to logger, database, and services in error handlers
-- 🚀 **Developer-friendly** - Hot reload, automatic regeneration, and clear error messages
-- 📦 **Zero configuration** - Sensible defaults with flexible customization options
+- 🔒 **型安全なIPC通信** - 自動型推論による完全なTypeScriptサポート
+- 🎯 **Resultタイプパターン** - 例外を使わない明示的なエラーハンドリング
+- 🛠️ **ユーザー定義バリデーション** - Zodを使用したリクエストバリデーションの完全な制御
+- 🎨 **コンテキスト対応エラーハンドリング** - エラーハンドラー内でロガー、データベース、サービスへのアクセス
+- 🚀 **開発者フレンドリー** - ホットリロード、自動再生成、明確なエラーメッセージ
+- 📦 **ゼロ設定** - 柔軟なカスタマイズオプションを持つ合理的なデフォルト設定
 
-## Installation
+## インストール
 
 ```bash
 npm install --save-dev electron-flow
-# or
+# または
 yarn add -D electron-flow
-# or
+# または
 pnpm add -D electron-flow
 ```
 
-## Quick Start
+## クイックスタート
 
-1. Initialize your project:
+1. プロジェクトを初期化:
 
 ```bash
 npx electron-flow init
 ```
 
-2. Define your handlers:
+2. ハンドラーを定義:
 
 ```typescript
 // src/main/handlers/author.ts
@@ -43,26 +43,26 @@ export const getAuthorSchema = z.object({
 export type GetAuthorRequest = z.infer<typeof getAuthorSchema>;
 
 export async function getAuthor(ctx: Context, request: GetAuthorRequest) {
-  // Validate request
+  // リクエストをバリデート
   const valid = getAuthorSchema.safeParse(request);
   if (!valid.success) {
     throw new ValidError(valid.error);
   }
   
-  // Business logic
+  // ビジネスロジック
   const author = await ctx.db.author.findUnique({
     where: { id: valid.data.id }
   });
   
   if (!author) {
-    throw new ApplicationError('Author not found');
+    throw new ApplicationError('著者が見つかりません');
   }
   
   return author;
 }
 ```
 
-3. Define your error handler:
+3. エラーハンドラーを定義:
 
 ```typescript
 // src/main/error-handler.ts
@@ -77,25 +77,25 @@ export function handleError(ctx: Context, e: unknown) {
   
   if (e instanceof ApplicationError) {
     return failure([{ 
-      path: "application error", 
+      path: "アプリケーションエラー", 
       messages: [e.message] 
     }]);
   }
   
   return failure([{ 
-    path: "system error", 
+    path: "システムエラー", 
     messages: [e.message] 
   }]);
 }
 ```
 
-4. Generate IPC code:
+4. IPCコードを生成:
 
 ```bash
 npx electron-flow generate
 ```
 
-5. Use in your renderer:
+5. レンダラーで使用:
 
 ```typescript
 import { api } from './generated/renderer/api';
@@ -104,9 +104,9 @@ const author = await api.author.get({ id: '123' });
 console.log(author.name);
 ```
 
-## Configuration
+## 設定
 
-Create `electron-flow.config.ts` in your project root:
+プロジェクトルートに`electron-flow.config.ts`を作成:
 
 ```typescript
 import type { ElectronFlowConfig } from 'electron-flow';
@@ -126,17 +126,17 @@ const config: ElectronFlowConfig = {
 export default config;
 ```
 
-## Commands
+## コマンド
 
-- `npx electron-flow init` - Initialize a new project
-- `npx electron-flow generate` - Generate IPC code
-- `npx electron-flow watch` - Watch for changes and regenerate
-- `npx electron-flow dev` - Development server with hot reload
+- `npx electron-flow init` - 新しいプロジェクトを初期化
+- `npx electron-flow generate` - IPCコードを生成
+- `npx electron-flow watch` - 変更を監視して再生成
+- `npx electron-flow dev` - ホットリロード付き開発サーバー
 
-## Documentation
+## ドキュメント
 
-For detailed documentation, visit [https://github.com/yourusername/electron-flow](https://github.com/yourusername/electron-flow)
+詳細なドキュメントについては、[https://github.com/yourusername/electron-flow](https://github.com/yourusername/electron-flow)をご覧ください。
 
-## License
+## ライセンス
 
 MIT

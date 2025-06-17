@@ -64,7 +64,7 @@ node bin/electron-flow --help    # CLIコマンドをローカルでテスト
 - **フェーズ1** ✅: ライブラリ基盤 (ランタイム + CLI基盤)
 - **フェーズ2** ✅: コード生成エンジン 
 - **フェーズ3** ✅: CLIコマンド実装
-- **カバレッジ**: 77.68% (目標: 90%)
+- **カバレッジ**: 85.27% (目標: 90%)
 
 ### 主要な設計決定
 
@@ -132,12 +132,12 @@ interface ElectronFlowConfig {
 - **TDDアプローチ**: Red-Green-Refactorサイクル
 - **テスト構造**: 日本語テスト名でArrange-Act-Assertパターン
 - **モック戦略**: Electron、fs、ts-morphの包括的モック
-- **カバレッジ改善が必要な領域**:
-  - `cli/index.ts`: 0% (CLIエントリーポイント)
-  - `runtime/index.ts`: 0% (APIエクスポート)
-  - `cli/config-loader.ts`: 58% (エラーハンドリング)
-  - `cli/commands/dev.ts`: 59% (Electronプロセス管理)
-  - `generator/parser.ts`: 73% (エッジケース)
+- **現在のカバレッジ状況**:
+  - `runtime/index.ts`: 100% ✅ (APIエクスポート完全テスト済み)
+  - `cli/commands/dev.ts`: 88.46% ✅ (Electronプロセス管理ほぼ完了)
+  - `cli/config-loader.ts`: 72.72% (詳細バリデーション追加済み)
+  - `generator/parser.ts`: 62.96% (基本機能テスト済み)
+  - `cli/index.ts`: 57.89% (統合テスト追加済み)
 
 ### エラーハンドリングパターン
 
