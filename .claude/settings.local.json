@@ -14,7 +14,8 @@
       "Bash(git add:*)",
       "Bash(npm run build:*)",
       "Bash(npm run test:coverage:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(touch:*)"
     ],
     "deny": []
   }

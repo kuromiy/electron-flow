@@ -140,5 +140,59 @@ describe('設定ローダーテスト', () => {
         'generation.apiStructureは "file" または "flat" である必要があります'
       );
     });
+
+    it('設定がnullまたはオブジェクトでない場合エラーを投げる', () => {
+      expect(() => validateConfig(null)).toThrow('設定はオブジェクトである必要があります');
+      expect(() => validateConfig('string')).toThrow('設定はオブジェクトである必要があります');
+      expect(() => validateConfig(123)).toThrow('設定はオブジェクトである必要があります');
+      expect(() => validateConfig(undefined)).toThrow('設定はオブジェクトである必要があります');
+    });
+
+    it('各必須フィールドの型検証エラー', () => {
+      const baseConfig = {
+        handlersDir: 'src/main/handlers',
+        outDir: 'src/generated',
+        contextPath: 'src/main/context.ts',
+        errorHandlerPath: 'src/main/error-handler.ts',
+      };
+
+      expect(() => validateConfig({ ...baseConfig, outDir: 123 })).toThrow('outDirは文字列である必要があります');
+      expect(() => validateConfig({ ...baseConfig, contextPath: 123 })).toThrow('contextPathは文字列である必要があります');
+      expect(() => validateConfig({ ...baseConfig, errorHandlerPath: 123 })).toThrow('errorHandlerPathは文字列である必要があります');
+    });
+
+    it('dev設定の詳細なバリデーション', () => {
+      const baseConfig = {
+        handlersDir: 'src/main/handlers',
+        outDir: 'src/generated',
+        contextPath: 'src/main/context.ts',
+        errorHandlerPath: 'src/main/error-handler.ts',
+      };
+
+      // devがnullの場合
+      expect(() => validateConfig({ ...baseConfig, dev: null })).toThrow('devはオブジェクトである必要があります');
+      
+      // devの各フィールドの型エラー
+      expect(() => validateConfig({ ...baseConfig, dev: { preloadEntry: 123 } })).toThrow('dev.preloadEntryは文字列である必要があります');
+      expect(() => validateConfig({ ...baseConfig, dev: { viteConfig: 123 } })).toThrow('dev.viteConfigは文字列である必要があります');
+      expect(() => validateConfig({ ...baseConfig, dev: { watchPaths: 'string' } })).toThrow('dev.watchPathsは文字列の配列である必要があります');
+      expect(() => validateConfig({ ...baseConfig, dev: { watchPaths: [123] } })).toThrow('dev.watchPathsは文字列の配列である必要があります');
+    });
+
+    it('generation設定の詳細なバリデーション', () => {
+      const baseConfig = {
+        handlersDir: 'src/main/handlers',
+        outDir: 'src/generated',
+        contextPath: 'src/main/context.ts',
+        errorHandlerPath: 'src/main/error-handler.ts',
+      };
+
+      // generationがnullの場合
+      expect(() => validateConfig({ ...baseConfig, generation: null })).toThrow('generationはオブジェクトである必要があります');
+      
+      // generationの各フィールドの型エラー
+      expect(() => validateConfig({ ...baseConfig, generation: { prettier: 'string' } })).toThrow('generation.prettierはブール値である必要があります');
+      expect(() => validateConfig({ ...baseConfig, generation: { prettierConfig: 123 } })).toThrow('generation.prettierConfigは文字列である必要があります');
+    });
   });
 });
