@@ -63,9 +63,9 @@ describe('generateコマンド', () => {
       
       // Generator モックの設定
       const mockGenerateCode = jest.fn()
-        .mockResolvedValueOnce({ code: 'main code', imports: [] })
-        .mockResolvedValueOnce({ code: 'preload code', imports: [] })
-        .mockResolvedValueOnce({ code: 'renderer code', imports: [] });
+        .mockReturnValueOnce({ code: 'main code', imports: [] })
+        .mockReturnValueOnce({ code: 'preload code', imports: [] })
+        .mockReturnValueOnce({ code: 'renderer code', imports: [] });
       
       (Generator as jest.MockedClass<typeof Generator>).mockImplementation(() => ({
         generateCode: mockGenerateCode,
@@ -82,9 +82,9 @@ describe('generateコマンド', () => {
       
       // コード生成を確認
       expect(mockGenerateCode).toHaveBeenCalledTimes(3);
-      expect(mockGenerateCode).toHaveBeenCalledWith(mockHandlers, 'main', mockConfig);
-      expect(mockGenerateCode).toHaveBeenCalledWith(mockHandlers, 'preload', mockConfig);
-      expect(mockGenerateCode).toHaveBeenCalledWith(mockHandlers, 'renderer', mockConfig);
+      expect(mockGenerateCode).toHaveBeenCalledWith(mockHandlers, 'main');
+      expect(mockGenerateCode).toHaveBeenCalledWith(mockHandlers, 'preload');
+      expect(mockGenerateCode).toHaveBeenCalledWith(mockHandlers, 'renderer');
       
       // ディレクトリ作成を確認
       expect(mockMkdir).toHaveBeenCalledWith('dist/generated', { recursive: true });
@@ -103,7 +103,7 @@ describe('generateコマンド', () => {
       } as any));
       
       const mockGenerateCode = jest.fn()
-        .mockResolvedValue({ code: 'test code', imports: [] });
+        .mockReturnValue({ code: 'test code', imports: [] });
       
       (Generator as jest.MockedClass<typeof Generator>).mockImplementation(() => ({
         generateCode: mockGenerateCode,
@@ -122,7 +122,7 @@ describe('generateコマンド', () => {
       } as any));
       
       const mockGenerateCode = jest.fn()
-        .mockResolvedValue({ code: 'test code', imports: [] });
+        .mockReturnValue({ code: 'test code', imports: [] });
       
       (Generator as jest.MockedClass<typeof Generator>).mockImplementation(() => ({
         generateCode: mockGenerateCode,
@@ -159,7 +159,7 @@ describe('generateコマンド', () => {
       } as any));
       
       const mockGenerateCode = jest.fn()
-        .mockResolvedValue({ code: 'test code', imports: [] });
+        .mockReturnValue({ code: 'test code', imports: [] });
       
       (Generator as jest.MockedClass<typeof Generator>).mockImplementation(() => ({
         generateCode: mockGenerateCode,
@@ -197,7 +197,9 @@ describe('generateコマンド', () => {
         parseHandlers: mockParseHandlers,
       } as any));
       
-      const mockGenerateCode = jest.fn().mockRejectedValue(new Error('生成エラー'));
+      const mockGenerateCode = jest.fn().mockImplementation(() => {
+        throw new Error('生成エラー');
+      });
       (Generator as jest.MockedClass<typeof Generator>).mockImplementation(() => ({
         generateCode: mockGenerateCode,
       } as any));
@@ -213,7 +215,7 @@ describe('generateコマンド', () => {
       } as any));
       
       const mockGenerateCode = jest.fn()
-        .mockResolvedValue({ code: 'test code', imports: [] });
+        .mockReturnValue({ code: 'test code', imports: [] });
       
       (Generator as jest.MockedClass<typeof Generator>).mockImplementation(() => ({
         generateCode: mockGenerateCode,
