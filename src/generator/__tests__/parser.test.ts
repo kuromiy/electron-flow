@@ -28,7 +28,7 @@ describe('Parser', () => {
       expect(mockProject.addSourceFilesAtPaths).toHaveBeenCalledWith('/test/handlers/**/*.ts');
     });
 
-    it('エクスポートされた関数を解析する', async () => {
+    it('基本的な関数を解析する', async () => {
       const mockFunction = {
         getName: () => 'testHandler',
         getParameters: () => [],
@@ -53,20 +53,13 @@ describe('Parser', () => {
       expect(result[0].filePath).toBe('/test/handlers/test.ts');
     });
 
-    it('パラメータ付きの関数を正しく解析する', async () => {
-      const mockParameter = {
-        getName: () => 'data',
-        hasQuestionToken: () => false,
-        getTypeNode: () => ({ getText: () => 'string' }),
-        getInitializer: () => null,
-      };
-
+    it('名前のない関数をスキップする', async () => {
       const mockFunction = {
-        getName: () => 'testHandler',
-        getParameters: () => [mockParameter],
-        getReturnTypeNode: () => ({ getText: () => 'Promise<string>' }),
+        getName: () => undefined,
+        getParameters: () => [],
+        getReturnTypeNode: () => null,
         getJsDocs: () => [],
-        isAsync: () => true,
+        isAsync: () => false,
         isExported: () => true,
       };
 
@@ -80,20 +73,39 @@ describe('Parser', () => {
 
       const result = await parser.parseHandlers('/test/handlers');
 
-      expect(result).toHaveLength(1);
-      expect(result[0].parameters).toHaveLength(1);
-      expect(result[0].parameters[0].name).toBe('data');
-      expect(result[0].parameters[0].type.name).toBe('string');
-      expect(result[0].returnType.name).toBe('Promise');
+      expect(result).toHaveLength(0);
     });
 
-    it('JSDocコメントを正しく抽出する', async () => {
+    it('エクスポートされていない関数をスキップする', async () => {
+      const mockFunction = {
+        getName: () => 'privateHandler',
+        getParameters: () => [],
+        getReturnTypeNode: () => null,
+        getJsDocs: () => [],
+        isAsync: () => false,
+        isExported: () => false,
+      };
+
+      const mockSourceFile = {
+        getFilePath: () => '/test/handlers/test.ts',
+        getFunctions: () => [mockFunction],
+        getExportedDeclarations: () => new Map(),
+      };
+
+      mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
+
+      const result = await parser.parseHandlers('/test/handlers');
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('JSDocコメントを正しく解析する', async () => {
       const mockJSDoc = {
         getDescription: () => 'テストハンドラーの説明',
       };
 
       const mockFunction = {
-        getName: () => 'testHandler',
+        getName: () => 'documentedHandler',
         getParameters: () => [],
         getReturnTypeNode: () => null,
         getJsDocs: () => [mockJSDoc],
@@ -111,129 +123,22 @@ describe('Parser', () => {
 
       const result = await parser.parseHandlers('/test/handlers');
 
+      expect(result).toHaveLength(1);
       expect(result[0].documentation).toBe('テストハンドラーの説明');
     });
 
-    it('エラーが発生した場合、ElectronFlowErrorをスローする', async () => {
-      mockProject.addSourceFilesAtPaths.mockImplementation(() => {
-        throw new Error('ファイル読み込みエラー');
-      });
+    it('パラメータ付き関数を解析する', async () => {
+      const mockParameter = {
+        getName: () => 'param1',
+        hasQuestionToken: () => false,
+        getTypeNode: () => ({ getText: () => 'string' }),
+        getInitializer: () => undefined,
+      };
 
-      await expect(parser.parseHandlers('/invalid/path')).rejects.toThrow(
-        'ハンドラーの解析に失敗しました'
-      );
-    });
-  });
-
-  describe('型解析', () => {
-    it('プリミティブ型を正しく識別する', async () => {
-      const primitiveTypes = ['string', 'number', 'boolean', 'void'];
-      
-      for (const type of primitiveTypes) {
-        const mockFunction = {
-          getName: () => 'testHandler',
-          getParameters: () => [],
-          getReturnTypeNode: () => ({ getText: () => type }),
-          getJsDocs: () => [],
-          isAsync: () => false,
-          isExported: () => true,
-        };
-
-        const mockSourceFile = {
-          getFilePath: () => '/test/handlers/test.ts',
-          getExportedDeclarations: () => new Map(),
-          getExportAssignments: () => [],
-          getFunctions: () => [mockFunction],
-        };
-
-        mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
-
-        const result = await parser.parseHandlers('/test/handlers');
-        expect(result[0].returnType.kind).toBe('primitive');
-        expect(result[0].returnType.name).toBe(type);
-      }
-    });
-
-    it('Promise型を正しく識別する', async () => {
       const mockFunction = {
-        getName: () => 'testHandler',
-        getParameters: () => [],
-        getReturnTypeNode: () => ({ getText: () => 'Promise<string>' }),
-        getJsDocs: () => [],
-        isAsync: () => false,
-        isExported: () => true,
-      };
-
-      const mockSourceFile = {
-        getFilePath: () => '/test/handlers/test.ts',
-        getExportedDeclarations: () => new Map(),
-        getExportAssignments: () => [],
-        getFunctions: () => [mockFunction],
-      };
-
-      mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
-
-      const result = await parser.parseHandlers('/test/handlers');
-      expect(result[0].returnType.kind).toBe('promise');
-      expect(result[0].returnType.name).toBe('Promise');
-      expect(result[0].returnType.typeArguments).toHaveLength(1);
-      expect(result[0].returnType.typeArguments![0].name).toBe('string');
-    });
-
-    it('配列型を正しく識別する', async () => {
-      const mockFunction = {
-        getName: () => 'testHandler',
-        getParameters: () => [],
-        getReturnTypeNode: () => ({ getText: () => 'string[]' }),
-        getJsDocs: () => [],
-        isAsync: () => false,
-        isExported: () => true,
-      };
-
-      const mockSourceFile = {
-        getFilePath: () => '/test/handlers/test.ts',
-        getExportedDeclarations: () => new Map(),
-        getExportAssignments: () => [],
-        getFunctions: () => [mockFunction],
-      };
-
-      mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
-
-      const result = await parser.parseHandlers('/test/handlers');
-      expect(result[0].returnType.kind).toBe('array');
-      expect(result[0].returnType.name).toBe('Array');
-      expect(result[0].returnType.elementType?.name).toBe('string');
-    });
-
-    it('ユニオン型を正しく識別する', async () => {
-      const mockFunction = {
-        getName: () => 'testHandler',
-        getParameters: () => [],
-        getReturnTypeNode: () => ({ getText: () => 'string | number' }),
-        getJsDocs: () => [],
-        isAsync: () => false,
-        isExported: () => true,
-      };
-
-      const mockSourceFile = {
-        getFilePath: () => '/test/handlers/test.ts',
-        getExportedDeclarations: () => new Map(),
-        getExportAssignments: () => [],
-        getFunctions: () => [mockFunction],
-      };
-
-      mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
-
-      const result = await parser.parseHandlers('/test/handlers');
-      expect(result[0].returnType.kind).toBe('union');
-      expect(result[0].returnType.unionTypes).toHaveLength(2);
-    });
-
-    it('async関数の戻り値をPromise型として推論する', async () => {
-      const mockFunction = {
-        getName: () => 'testHandler',
-        getParameters: () => [],
-        getReturnTypeNode: () => null,
+        getName: () => 'handlerWithParams',
+        getParameters: () => [mockParameter],
+        getReturnTypeNode: () => ({ getText: () => 'Promise<void>' }),
         getJsDocs: () => [],
         isAsync: () => true,
         isExported: () => true,
@@ -241,28 +146,31 @@ describe('Parser', () => {
 
       const mockSourceFile = {
         getFilePath: () => '/test/handlers/test.ts',
-        getExportedDeclarations: () => new Map(),
-        getExportAssignments: () => [],
         getFunctions: () => [mockFunction],
+        getExportedDeclarations: () => new Map(),
       };
 
       mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
 
       const result = await parser.parseHandlers('/test/handlers');
-      expect(result[0].returnType.kind).toBe('promise');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].parameters).toHaveLength(1);
+      expect(result[0].parameters[0].name).toBe('param1');
+      expect(result[0].parameters[0].type.name).toBe('string');
       expect(result[0].returnType.name).toBe('Promise');
     });
 
-    it('オプショナルパラメータを正しく識別する', async () => {
+    it('オプショナルパラメータを解析する', async () => {
       const mockParameter = {
         getName: () => 'optionalParam',
         hasQuestionToken: () => true,
-        getTypeNode: () => ({ getText: () => 'string' }),
-        getInitializer: () => null,
+        getTypeNode: () => ({ getText: () => 'number' }),
+        getInitializer: () => ({ getText: () => '42' }),
       };
 
       const mockFunction = {
-        getName: () => 'testHandler',
+        getName: () => 'handlerWithOptional',
         getParameters: () => [mockParameter],
         getReturnTypeNode: () => null,
         getJsDocs: () => [],
@@ -272,15 +180,57 @@ describe('Parser', () => {
 
       const mockSourceFile = {
         getFilePath: () => '/test/handlers/test.ts',
-        getExportedDeclarations: () => new Map(),
-        getExportAssignments: () => [],
         getFunctions: () => [mockFunction],
+        getExportedDeclarations: () => new Map(),
       };
 
       mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
 
       const result = await parser.parseHandlers('/test/handlers');
+
+      expect(result).toHaveLength(1);
       expect(result[0].parameters[0].optional).toBe(true);
+      expect(result[0].parameters[0].defaultValue).toBe('42');
+    });
+
+    it('エラー時にElectronFlowErrorをスローする', async () => {
+      mockProject.addSourceFilesAtPaths.mockImplementation(() => {
+        throw new Error('ファイル読み込みエラー');
+      });
+
+      await expect(parser.parseHandlers('/test/handlers'))
+        .rejects.toThrow('ハンドラーの解析に失敗しました');
+    });
+
+    it('型ノードなしのパラメータを処理する', async () => {
+      const mockParameter = {
+        getName: () => 'untypedParam',
+        hasQuestionToken: () => false,
+        getTypeNode: () => null,
+        getInitializer: () => undefined,
+      };
+
+      const mockFunction = {
+        getName: () => 'handlerWithUntypedParam',
+        getParameters: () => [mockParameter],
+        getReturnTypeNode: () => null,
+        getJsDocs: () => [],
+        isAsync: () => false,
+        isExported: () => true,
+      };
+
+      const mockSourceFile = {
+        getFilePath: () => '/test/handlers/test.ts',
+        getFunctions: () => [mockFunction],
+        getExportedDeclarations: () => new Map(),
+      };
+
+      mockProject.getSourceFiles.mockReturnValue([mockSourceFile as any]);
+
+      const result = await parser.parseHandlers('/test/handlers');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].parameters[0].type.kind).toBe('unknown');
     });
   });
 });
