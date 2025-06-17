@@ -47,7 +47,7 @@ export async function generate(options: GenerateOptions): Promise<void> {
     
     for (const target of targets) {
       spinner.text = `${target}プロセス用のコードを生成しています...`;
-      const code = await generator.generateCode(handlers, target, config);
+      const code = generator.generateCode(handlers, target);
       
       const fileName = target === 'main' ? 'ipc-main.ts' : 
                       target === 'preload' ? 'ipc-preload.ts' : 'ipc-renderer.ts';

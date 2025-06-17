@@ -3,7 +3,7 @@ import { loadConfig } from '../config-loader';
 import { ElectronFlowError } from '../error-handler';
 import { generate } from './generate';
 import { watch as chokidarWatch } from 'chokidar';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import { debounce } from 'lodash';
 
 let chalk: any;
