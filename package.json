@@ -1,6 +1,6 @@
 {
   "name": "electron-flow",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Type-safe IPC code generator for Electron applications",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -13,12 +13,27 @@ Electronアプリケーション用の型安全なIPCコードジェネレータ
 
 ## インストール
 
+GitHubから直接インストール:
+
 ```bash
-npm install --save-dev electron-flow
+npm install --save-dev github:yourusername/electron-flow
 # または
-yarn add -D electron-flow
+yarn add -D github:yourusername/electron-flow
 # または
-pnpm add -D electron-flow
+pnpm add -D github:yourusername/electron-flow
+```
+
+特定のバージョンやブランチを指定する場合:
+
+```bash
+# タグを指定
+npm install --save-dev github:yourusername/electron-flow#v0.1.0
+
+# ブランチを指定
+npm install --save-dev github:yourusername/electron-flow#main
+
+# コミットハッシュを指定
+npm install --save-dev github:yourusername/electron-flow#3c0f744
 ```
 
 ## クイックスタート
