@@ -57,14 +57,17 @@ const config: ElectronFlowConfig = {
   
   // 開発サーバー設定（オプション）
   dev: {
-    enabled: true,
-    port: 3000,
+    electronEntry: './src/main/index.ts',
+    preloadEntry: './src/preload/index.ts',
+    viteConfig: './vite.config.ts',
+    watchPaths: ['./src'],
   },
   
   // コード生成オプション
   generation: {
-    useStrict: true,
-    emitComments: true,
+    apiStructure: 'file',
+    prettier: true,
+    prettierConfig: '.prettierrc',
   },
 };
 
