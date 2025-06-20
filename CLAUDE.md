@@ -1,184 +1,210 @@
 # CLAUDE.md
 
-このファイルは、Claude Code (claude.ai/code) がこのリポジトリでコードを扱う際のガイダンスを提供します。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## プロジェクトガイドライン
 
-- コミットやプッシュはこちらでやる
+- コミットやプッシュは明示的に指示された場合のみ実行
 - コメント、ドキュメント、応答は日本語で
+- テストファーストでの開発（TDD）を徹底
 
 ## 開発コマンド
 
-### テスト
+### テスト実行
 ```bash
-npm test                    # 全てのテストを実行
-npm run test:watch         # 監視モードで開発
-npm run test:coverage      # カバレッジ付きでテスト実行
-npm run tdd                # TDDモード（詳細出力）
-npm test src/path/file.test.ts  # 特定のテストファイルを実行
+# 基本的なテストコマンド
+npm test                          # 全てのテストを実行
+npm run test:watch               # 監視モードで開発（TDD推奨）
+npm run test:coverage            # カバレッジ付きでテスト実行
+npm run tdd                      # TDDモード（詳細出力付き監視）
+
+# 特定のテストファイル実行
+npm test src/runtime/__tests__/result.test.ts    # 単一ファイル
+npm test src/cli/commands                         # ディレクトリ内全て
+npm test -- --testNamePattern="成功時"            # パターンマッチ
+
+# デバッグモード
+npm test -- --verbose            # 詳細出力
+npm test -- --bail              # 最初のエラーで停止
 ```
 
 ### ビルドと開発
 ```bash
-npm run build              # TypeScriptをdist/にビルド
+npm run build              # TypeScriptをdist/にビルド（tsconfig.build.json使用）
 npm run dev                # 監視モードでコンパイル
 npm run lint               # ESLintチェック
 npm run lint:fix           # ESLint自動修正
 npm run format             # Prettierフォーマット
+npm run format:check       # フォーマットチェック（CI用）
 ```
 
-### CLIテスト
+### CLIコマンド
 ```bash
-node bin/electron-flow --help    # CLIコマンドをローカルでテスト
+# ローカル開発でのCLIテスト
+node bin/electron-flow --help           # ヘルプ表示
+node bin/electron-flow init            # プロジェクト初期化
+node bin/electron-flow generate        # コード生成
+node bin/electron-flow watch           # ファイル監視モード
+node bin/electron-flow dev             # 開発サーバー起動
+
+# npxでの実行（パッケージインストール後）
+npx electron-flow --version            # バージョン確認
 ```
 
-## アーキテクチャ概要
+## プロジェクト概要
+
+**electron-flow** は、Electronアプリケーション用の型安全なIPCコードジェネレーターです。Resultタイプパターンとユーザー定義エラーハンドリングにより、例外を使わない明示的なエラー処理を実現します。
+
+### 主要な特徴
+- 🔒 型安全なIPC通信 - 自動型推論による完全なTypeScriptサポート
+- 🎯 Resultタイプパターン - 例外を使わない明示的なエラーハンドリング
+- 🛠️ ユーザー定義バリデーション - Zodを使用した完全な制御
+- 🎨 コンテキスト対応エラーハンドリング - エラー処理でもサービスへのアクセス可能
+- 🚀 開発者フレンドリー - ホットリロード、自動再生成、明確なエラーメッセージ
+
+## アーキテクチャ詳細
+
+### ディレクトリ構造
+```
+electron-flow/
+├── src/
+│   ├── runtime/              # ランタイムライブラリ（Result型、ユーティリティ）
+│   │   ├── result.ts        # Result<T>型定義と関連関数
+│   │   ├── error.ts         # ErrorValue型定義
+│   │   └── index.ts         # パブリックAPIエクスポート
+│   ├── cli/                 # CLIツール実装
+│   │   ├── commands/        # 各コマンド実装（init, generate, watch, dev）
+│   │   ├── config-loader.ts # 設定ファイル読み込みとバリデーション
+│   │   ├── error.ts         # ElectronFlowErrorクラス
+│   │   └── index.ts         # CLIエントリーポイント
+│   └── generator/           # コード生成エンジン
+│       ├── parser.ts        # TypeScript AST解析
+│       ├── generator.ts     # IPCコード生成
+│       ├── type-inference.ts # 型推論ロジック
+│       └── templates/       # 生成コードテンプレート
+├── bin/
+│   └── electron-flow        # CLIエントリーポイント
+├── docs/                    # アーキテクチャドキュメント
+└── __tests__/              # テストファイル（各srcディレクトリ内）
+```
 
 ### コアコンポーネント
 
-**electron-flow** は、Resultタイプパターンを実装し、明示的なエラーハンドリングを提供するElectronアプリケーション用の型安全なIPCコードジェネレーターです。
-
 #### 1. ランタイムライブラリ (`src/runtime/`)
-- **Resultタイプシステム**: `Result<T> = Success<T> | Failure<ErrorValue[]>`
-- **エラーハンドリング**: パスとメッセージを持つ`ErrorValue`インターフェース
-- **ユーティリティ**: `success()`, `failure()`, `isSuccess()`, `isFailure()` 関数
-- ステータス: ✅ **完了** - 全テスト通過
+**Resultタイプシステム**の実装：
+```typescript
+type Result<T> = Success<T> | Failure<ErrorValue[]>
+type ErrorValue = { path: string; messages: string[] }
+```
+
+提供される関数：
+- `success<T>(value: T): Success<T>` - 成功結果の作成
+- `failure(errors: ErrorValue[]): Failure` - 失敗結果の作成
+- `isSuccess(result: Result<any>): boolean` - 成功判定
+- `isFailure(result: Result<any>): boolean` - 失敗判定
 
 #### 2. CLI基盤 (`src/cli/`)
-- **コマンド構造**: Commander.jsベースのCLIで4つのメインコマンド
-- **設定**: バリデーション付きTypeScript設定ローダー
-- **エラーハンドリング**: 日本語メッセージ付きカスタムElectronFlowError
-- **コマンド**: `init`, `generate`, `watch`, `dev`
-- ステータス: ✅ **完了** - 全コマンド実装済み
+Commander.jsベースの4つのコマンド：
+- **init**: プロジェクト初期化、基本構造生成
+- **generate**: ハンドラーからIPCコード生成
+- **watch**: ファイル変更監視と自動再生成
+- **dev**: Electron開発サーバー（ホットリロード付き）
 
 #### 3. コード生成エンジン (`src/generator/`)
-- **パーサー**: ts-morphを使用したTypeScript AST解析
-- **ジェネレーター**: main/preload/renderer用IPCコード生成
-- **型推論**: 自動型検出と生成
-- ステータス: ✅ **完了** - 完全実装
+3段階のパイプライン処理：
+1. **Parser**: ts-morphでTypeScriptハンドラーを解析
+2. **Type Inference**: 戻り値型の自動推論
+3. **Generator**: main/preload/renderer用コード生成
 
-### 実装ステータス
+## 実装ステータスとメトリクス
 
-**現在のステータス: 全フェーズ完了 (138/138 テスト通過)**
+### 現在のステータス
+- **総テスト数**: 138テスト（全て通過 ✅）
+- **コードカバレッジ**: 85.27%（目標: 90%）
+- **実装フェーズ**: 全3フェーズ完了
 
-- **フェーズ1** ✅: ライブラリ基盤 (ランタイム + CLI基盤)
-- **フェーズ2** ✅: コード生成エンジン 
-- **フェーズ3** ✅: CLIコマンド実装
-- **カバレッジ**: 85.27% (目標: 90%)
+### カバレッジ詳細
+| モジュール | カバレッジ | 状態 | 備考 |
+|-----------|-----------|------|------|
+| runtime/index.ts | 100% | ✅ | 完全テスト済み |
+| cli/commands/dev.ts | 88.46% | ✅ | Electronプロセス管理 |
+| cli/config-loader.ts | 72.72% | 🔧 | バリデーション追加中 |
+| generator/parser.ts | 62.96% | 🔧 | エッジケース対応中 |
+| cli/index.ts | 57.89% | 🔧 | 統合テスト追加中 |
 
-### 主要な設計決定
+## 主要な設計パターン
 
-1. **ユーザー制御バリデーション**: ハンドラーでバリデーションを実装（自動生成ではない）
-2. **コンテキスト対応エラーハンドリング**: `handleError(ctx: Context, e: unknown)` がコンテキストを受け取る
-3. **Resultタイプパターン**: 例外なしの明示的な成功/失敗ハンドリング
-4. **TDDアプローチ**: 90%以上のカバレッジ要件を持つテストファーストな開発
+### 1. Resultタイプパターン
+```typescript
+// 成功/失敗を明示的に扱う
+Result<T> = Success<T> | Failure<ErrorValue[]>
 
-### 設定構造
+// 使用例
+const result = await api.getAuthor({ id: '123' });
+if (isSuccess(result)) {
+  console.log(result.value); // 型安全なアクセス
+} else {
+  console.error(result.value); // ErrorValue[]
+}
+```
+
+### 2. コンテキスト対応エラーハンドリング
+```typescript
+// エラーハンドラーでContextを受け取る
+export function handleError(ctx: Context, e: unknown) {
+  // ロガーやサービスにアクセス可能
+  ctx.logger.error('Error occurred', e);
+  
+  if (e instanceof ValidationError) {
+    return failure(toErrorValues(e));
+  }
+  // ...
+}
+```
+
+### 3. ユーザー制御バリデーション
+```typescript
+// ハンドラー内でバリデーションを実装
+export async function getAuthor(ctx: Context, request: GetAuthorRequest) {
+  // ユーザーが完全に制御
+  const valid = getAuthorSchema.safeParse(request);
+  if (!valid.success) {
+    throw new ValidationError(valid.error);
+  }
+  // ビジネスロジック...
+}
+```
+
+## 設定ファイル構造
 
 ```typescript
 interface ElectronFlowConfig {
-  handlersDir: string;          // ハンドラー関数ディレクトリ
-  outDir: string;               // 生成されたコードの出力先
-  contextPath: string;          // Context型定義へのパス
-  errorHandlerPath: string;     // エラーハンドラー実装へのパス
-  dev?: DevConfig;              // 開発サーバーオプション
-  generation?: GenerationConfig; // コード生成オプション
+  // 必須設定
+  handlersDir: string;          // ハンドラーディレクトリ (例: 'src/main/handlers')
+  outDir: string;               // 生成先ディレクトリ (例: 'src/generated')
+  contextPath: string;          // Context型定義パス (例: 'src/main/context.ts')
+  errorHandlerPath: string;     // エラーハンドラーパス (例: 'src/main/error-handler.ts')
+  
+  // オプション設定
+  dev?: {
+    electronEntry: string;      // Electronエントリーポイント
+    preloadEntry?: string;      // プリロードスクリプト
+    viteConfig?: string;        // Vite設定ファイル
+    watchPaths?: string[];      // 監視対象パス
+  };
+  
+  generation?: {
+    channelNaming?: 'functionName' | 'kebabCase' | 'camelCase';
+    typeInference?: 'full' | 'basic';
+  };
 }
 ```
 
-### CLIコマンド実装
+## コード生成テンプレート
 
-#### Generateコマンド (`generate.ts`)
-- ts-morphを使用して設定読み込みとハンドラー解析
-- main/preload/rendererターゲット用の型安全なIPCコード生成
-- ドライランモードと適切なエラーハンドリングでファイルI/O対応
-
-#### Initコマンド (`init.ts`)
-- 合理的なデフォルトでプロジェクト構造を作成
-- 設定ファイル、context.ts、error-handler.ts、サンプルハンドラーを生成
-- 既存ファイル上書き用のforceオプション対応
-
-#### Watchコマンド (`watch.ts`)
-- chokidarでハンドラー、コンテキスト、設定ファイルのファイル監視
-- デバウンス付き自動再生成（300ms）と視覚的フィードバック
-- 優雅なシャットダウンとエラー回復
-
-#### Devコマンド (`dev.ts`)
-- Electronプロセス管理付き開発サーバー
-- 変更時の自動プロセス再起動付きファイル監視
-- Electronホットリロードとコード生成の統合（500msデバウンス）
-
-### コード生成アーキテクチャ
-
-ジェネレーターはパイプラインアーキテクチャに従います：
-
-1. **パーサー** (`parser.ts`): ts-morphを使用したTypeScriptハンドラー解析
-   - 関数シグネチャ、パラメータ、戻り値型の抽出
-   - JSDocコメントとオプショナルパラメータの処理
-   - ハンドラー構造とエクスポートの検証
-
-2. **型推論** (`type-inference.ts`): スマートな型検出
-   - 値とTypeScript ASTノードからの型推論
-   - ユニオン型の作成とPromise/Resultパターンの処理
-   - 型互換性チェックの提供
-
-3. **ジェネレーター** (`generator.ts`): ターゲット用コード生成
-   - **メインプロセス**: Resultパターンラッピング付きIPCハンドラー
-   - **プリロード**: 型安全なAPIブリッジ関数
-   - **レンダラー**: 完全なTypeScriptサポート付きクライアント側API
-
-### テスト戦略
-
-- **TDDアプローチ**: Red-Green-Refactorサイクル
-- **テスト構造**: 日本語テスト名でArrange-Act-Assertパターン
-- **モック戦略**: Electron、fs、ts-morphの包括的モック
-- **現在のカバレッジ状況**:
-  - `runtime/index.ts`: 100% ✅ (APIエクスポート完全テスト済み)
-  - `cli/commands/dev.ts`: 88.46% ✅ (Electronプロセス管理ほぼ完了)
-  - `cli/config-loader.ts`: 72.72% (詳細バリデーション追加済み)
-  - `generator/parser.ts`: 62.96% (基本機能テスト済み)
-  - `cli/index.ts`: 57.89% (統合テスト追加済み)
-
-### エラーハンドリングパターン
-
-コードベースは`ElectronFlowError`で一貫したエラーハンドリングを使用：
-
+### メインプロセス生成パターン
 ```typescript
-// 標準エラーラッピングパターン
-try {
-  // 操作
-} catch (error) {
-  if (error instanceof ElectronFlowError) {
-    throw error;
-  }
-  throw new ElectronFlowError(
-    `操作に失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
-    'OPERATION_FAILED'
-  );
-}
-```
-
-### 開発ガイドライン
-
-#### 新機能の追加
-1. 最初にテストを作成（TDD）
-2. 最小限の実行可能な機能を実装
-3. 明確性とパフォーマンスのためにリファクタリング
-4. 日本語のコメントとメッセージを確実に
-5. 関連ドキュメントの更新
-
-#### 新コンポーネントのテスト
-- ソースと同じ場所の`__tests__/`ディレクトリにテストを配置
-- 説明的な日本語テスト名を使用
-- 外部依存関係（Electron、ファイルシステム）をモック
-- 新しいコードで90%以上のカバレッジを目標
-
-#### コード生成パターン
-
-ジェネレーターを拡張する際は、これらのパターンに従ってください：
-
-```typescript
-// メインプロセス用ターゲット生成パターン
+// ハンドラー登録（生成されるコード）
 ipcMain.handle('functionName', async (event: IpcMainInvokeEvent, args: any) => {
   try {
     const result = await handlerFunction({ ...ctx, event }, args);
@@ -189,10 +215,151 @@ ipcMain.handle('functionName', async (event: IpcMainInvokeEvent, args: any) => {
 });
 ```
 
-### 依存関係とピア依存関係
+### レンダラー生成パターン
+```typescript
+// API関数（生成されるコード）
+export const api = {
+  author: {
+    get: async (request: GetAuthorRequest): Promise<GetAuthorResponse> => {
+      const result = await window.electronAPI.getAuthor(request);
+      return unwrapResult(result);
+    },
+  },
+};
+```
 
-- **ランタイム依存関係**: chalk, chokidar, commander, lodash, ora, ts-morph
-- **ピア依存関係**: electron (>=13.0.0), zod (>=3.0.0)
-- **Nodeバージョン**: >=16.0.0
+## TDD開発ワークフロー
 
-このプロジェクトは最新のElectronアプリケーションで動作するよう設計されており、ユーザー定義のバリデーションスキーマにZodが必要です。
+### 基本的なTDDサイクル
+1. **Red**: 失敗するテストを書く
+2. **Green**: テストを通す最小限のコードを実装
+3. **Refactor**: コードを改善（テストは通ったまま）
+
+### テスト構造例
+```typescript
+describe('ハンドラーパーサー', () => {
+  it('関数名を正しく抽出する', () => {
+    // Arrange: テストデータ準備
+    const sourceCode = `export async function getAuthor(ctx: Context, request: GetAuthorRequest) {}`;
+    
+    // Act: 実行
+    const result = parser.parseHandlerFunction(sourceCode);
+    
+    // Assert: 検証
+    expect(result.functionName).toBe('getAuthor');
+  });
+});
+```
+
+### モック設定
+```typescript
+// jest.setup.ts でのモック例
+jest.mock('electron', () => ({
+  ipcMain: { handle: jest.fn() },
+  contextBridge: { exposeInMainWorld: jest.fn() },
+  ipcRenderer: { invoke: jest.fn() },
+}));
+```
+
+## エラーハンドリングパターン
+
+### ElectronFlowError使用例
+```typescript
+try {
+  // 操作実行
+  const config = await loadConfig(configPath);
+  return config;
+} catch (error) {
+  // 既知のエラーは再スロー
+  if (error instanceof ElectronFlowError) {
+    throw error;
+  }
+  // 未知のエラーをラップ
+  throw new ElectronFlowError(
+    `設定ファイルの読み込みに失敗しました: ${error instanceof Error ? error.message : '不明なエラー'}`,
+    'CONFIG_LOAD_ERROR'
+  );
+}
+```
+
+### エラーコード一覧
+- `CONFIG_LOAD_ERROR`: 設定ファイル読み込みエラー
+- `HANDLER_PARSE_ERROR`: ハンドラー解析エラー
+- `GENERATION_ERROR`: コード生成エラー
+- `VALIDATION_ERROR`: バリデーションエラー
+
+## 開発ガイドライン
+
+### 新機能追加の手順
+1. **要件定義**: 機能の目的と仕様を明確化
+2. **テスト作成**: 期待する動作のテストを先に書く
+3. **実装**: テストを通す最小限のコード
+4. **リファクタリング**: パフォーマンスと可読性の改善
+5. **ドキュメント**: 日本語でのコメントと説明追加
+
+### コーディング規約
+- TypeScriptの`strict`モードを使用
+- 関数は単一責任の原則に従う
+- エラーメッセージは日本語で分かりやすく
+- 型定義は明示的に（`any`の使用は最小限）
+
+### デバッグとトラブルシューティング
+
+#### よくある問題と解決方法
+1. **設定ファイルが見つからない**
+   ```bash
+   # 設定ファイルパスを確認
+   ls electron-flow.config.ts
+   # TypeScriptの場合はビルドが必要
+   npm run build
+   ```
+
+2. **型推論エラー**
+   ```bash
+   # 詳細なエラー出力を確認
+   npx electron-flow generate --verbose
+   ```
+
+3. **ファイル監視が動作しない**
+   ```bash
+   # chokidarの制限を確認
+   echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf
+   ```
+
+### パフォーマンス最適化
+
+#### 大規模プロジェクトでの推奨設定
+```typescript
+const config: ElectronFlowConfig = {
+  generation: {
+    // 基本的な型推論で高速化
+    typeInference: 'basic',
+    // インクリメンタル生成を有効化
+    incremental: true,
+  },
+  // 監視対象を限定
+  dev: {
+    watchPaths: ['src/main/handlers/**/*.ts'],
+    // デバウンス時間を調整
+    debounce: 500,
+  },
+};
+```
+
+## 依存関係
+
+### ランタイム依存関係
+- **chalk** (^5.3.0): ターミナル出力の装飾
+- **chokidar** (^3.5.3): ファイル監視
+- **commander** (^11.1.0): CLIフレームワーク
+- **lodash** (^4.17.21): ユーティリティ関数
+- **ora** (^8.0.1): スピナー表示
+- **ts-morph** (^21.0.1): TypeScript AST操作
+
+### ピア依存関係
+- **electron** (>=13.0.0): Electronフレームワーク
+- **zod** (>=3.0.0): スキーマバリデーション
+
+### Node.jsバージョン
+- 最小要件: v16.0.0以上
+- 推奨: v18.0.0以上（パフォーマンス向上）
