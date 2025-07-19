@@ -1,0 +1,14 @@
+{
+  "name": "electron-flow",
+  "version": "0.0.1",
+  "description": "TypeScript APIから自動でIPC通信コードを生成する、Electronアプリケーション開発用ビルドツールライブラリ",
+  "license": "UNLICENSE",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7"
+  },
+  "scripts": {
+    "prepare": "husky"
+  }
+}
