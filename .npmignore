@@ -1,0 +1,54 @@
+# Source files
+src/
+**/*.ts
+!**/*.d.ts
+
+# Development files
+.eslintrc.*
+.prettierrc*
+tsconfig*.json
+jest.config.*
+vitest.config.*
+
+# Documentation
+docs/
+examples/
+tools/
+scripts/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Testing
+**/*.test.*
+**/*.spec.*
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.eslintcache
+
+# Environment
+.env*
+
+# Development dependencies
+node_modules/
+.npm/

@@ -3,12 +3,33 @@
   "version": "0.0.1",
   "description": "TypeScript APIから自動でIPC通信コードを生成する、Electronアプリケーション開発用ビルドツールライブラリ",
   "license": "UNLICENSE",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "husky": "^9.1.7"
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.0.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.0.0",
+    "typescript": "5.5.4"
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "build": "npm run build --workspaces",
+    "dev": "npm run dev --workspaces",
+    "lint": "eslint packages/codeGenerate/src/index.ts cli/src/index.ts",
+    "lint:fix": "eslint packages/codeGenerate/src/index.ts cli/src/index.ts --fix",
+    "format": "prettier --write packages/**/*.ts cli/**/*.ts",
+    "clean": "npm run clean --workspaces",
+    "test": "npm run test --workspaces"
   }
 }
