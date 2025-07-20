@@ -2,6 +2,8 @@
 
 // 詳細な型定義を再エクスポート
 export * from './types.js';
+// コード生成関数をエクスポート
+export * from './format.js';
 import type { BuildResult } from './types.js';
 
 // 既存の設定インターフェース（後方互換性のため維持）
@@ -17,6 +19,18 @@ export interface AutoCodeOption {
     handlerName: string;
     defaultHandler?: boolean;
   };
+}
+
+// Result型（生成コードで使用）
+export type Result<T> = 
+  | { success: true; data: T }
+  | { success: false; error: ErrorDetails };
+
+export interface ErrorDetails {
+  message: string;
+  type: string;
+  details?: unknown;
+  timestamp: string;
 }
 
 // 後方互換性のための旧型定義（非推奨）
