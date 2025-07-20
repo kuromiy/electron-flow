@@ -1,9 +1,17 @@
-// Phase 2以降で実装される関数のプレースホルダー
+// Phase 4で完全実装されたモジュール
 
 // 詳細な型定義を再エクスポート
 export * from './types.js';
 // コード生成関数をエクスポート
 export * from './format.js';
+// ビルドシステムをエクスポート
+export * from './build.js';
+// 設定管理をエクスポート
+export * from './config.js';
+// ファイル管理をエクスポート
+export * from './fileManager.js';
+// エラーハンドリングをエクスポート
+export * from './errorHandler.js';
 import type { BuildResult } from './types.js';
 
 // 既存の設定インターフェース（後方互換性のため維持）
