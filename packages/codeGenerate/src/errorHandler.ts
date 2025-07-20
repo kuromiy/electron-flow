@@ -99,7 +99,7 @@ export class ErrorHandler {
    */
   handleBuildError(error: Error, context: BuildContext): ExtendedBuildResult {
     const errorCategory = this.categorizeError(error);
-    const { option, startTime } = context;
+    const { startTime } = context;
 
     context.logger.error(`エラー発生 (${errorCategory}): ${error.message}`);
 
@@ -151,7 +151,7 @@ export class ErrorHandler {
    * @returns ビルド結果
    */
   private handleParseError(error: ParseError, context: BuildContext): ExtendedBuildResult {
-    const { option, logger } = context;
+    const { logger } = context;
     
     logger.error(`解析エラー: ${error.filePath}`);
     if (error.line) {
