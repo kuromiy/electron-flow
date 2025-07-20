@@ -12,6 +12,16 @@ export * from './config.js';
 export * from './fileManager.js';
 // エラーハンドリングをエクスポート
 export * from './errorHandler.js';
+
+// Phase 6: 最適化・監視機能を追加エクスポート
+// ファイル監視システム
+export * from './watch.js';
+// キャッシュシステム
+export * from './cache.js';
+// パフォーマンス監視
+export * from './performance.js';
+// メモリ最適化・ベンチマーク
+export * from './optimizer.js';
 import type { BuildResult } from './types.js';
 
 // 既存の設定インターフェース（後方互換性のため維持）
@@ -69,9 +79,36 @@ export async function build(_option: AutoCodeOption): Promise<BuildResult> {
 
 /**
  * ファイル監視付きビルド実行
- * Phase 6で実装予定
+ * Phase 6で実装
  */
-// eslint-disable-next-line no-unused-vars
-export async function watchBuild(_option: AutoCodeOption): Promise<void> {
-  throw new Error('Not implemented yet - will be implemented in Phase 6');
+export async function watchBuild(option: AutoCodeOption): Promise<void> {
+  const { FileWatcher } = await import('./watch.js');
+  const watcher = new FileWatcher();
+  
+  // eslint-disable-next-line no-console
+  console.log('[electron-flow] 監視モード開始');
+  
+  try {
+    const handle = await watcher.startWatching(option);
+    
+    // プロセス終了時のクリーンアップ
+    const cleanup = async (): Promise<void> => {
+      // eslint-disable-next-line no-console
+      console.log('\n[electron-flow] 監視モード終了中...');
+      await handle.stop();
+      process.exit(0);
+    };
+    
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+    
+    // 監視を継続
+    return new Promise(() => {
+      // 無限に待機（SIGINTで終了）
+    });
+    
+  } catch (error) {
+    console.error('[electron-flow] 監視モードエラー:', error);
+    throw error;
+  }
 }

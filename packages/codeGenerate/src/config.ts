@@ -41,7 +41,7 @@ export interface AdvancedOptions {
 export interface ConfigValidationError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 /**
@@ -103,26 +103,46 @@ export class ConfigManager {
    * @param config - 生の設定オブジェクト
    * @returns 正規化された設定オプション
    */
-  private validateAndNormalize(config: any): ExtendedAutoCodeOption {
+  private validateAndNormalize(config: unknown): ExtendedAutoCodeOption {
     this.errors = [];
     this.warnings = [];
 
+    // 型ガード
+    if (!config || typeof config !== 'object') {
+      throw new Error('設定は有効なオブジェクトである必要があります');
+    }
+
     // 必須フィールドの検証
-    this.validateRequiredFields(config);
+    this.validateRequiredFields(config as Record<string, unknown>);
     
     if (this.errors.length > 0) {
       const errorMessages = this.errors.map(e => `${e.field}: ${e.message}`).join('\n');
       throw new Error(`設定検証エラー:\n${errorMessages}`);
     }
 
+    // 型キャストして安全にアクセス
+    const safeConfig = config as Record<string, unknown>;
+    
     // パスの正規化
     const normalized: ExtendedAutoCodeOption = {
-      ...config,
-      targetPath: path.resolve(config.targetPath),
-      preloadPath: path.resolve(config.preloadPath),
-      registerPath: path.resolve(config.registerPath),
-      rendererPath: path.resolve(config.rendererPath),
-      contextPath: config.contextPath ? path.resolve(config.contextPath) : undefined
+      targetPath: path.resolve(safeConfig['targetPath'] as string),
+      preloadPath: path.resolve(safeConfig['preloadPath'] as string),
+      registerPath: path.resolve(safeConfig['registerPath'] as string),
+      rendererPath: path.resolve(safeConfig['rendererPath'] as string),
+      ...(safeConfig['contextPath'] ? { contextPath: path.resolve(safeConfig['contextPath'] as string) } : {}),
+      ignores: Array.isArray(safeConfig['ignores']) ? safeConfig['ignores'] as string[] : [],
+      errorHandler: {
+        handlerPath: './error-handler.js',
+        handlerName: 'defaultErrorHandler',
+        defaultHandler: true
+      },
+      logLevel: 'info',
+      advanced: {
+        concurrency: 4,
+        verbose: false,
+        createBackup: false,
+        excludePatterns: []
+      }
     };
 
     // デフォルト値の適用
@@ -133,7 +153,7 @@ export class ConfigManager {
    * 必須フィールドの検証
    * @param config - 設定オブジェクト
    */
-  private validateRequiredFields(config: any): void {
+  private validateRequiredFields(config: Record<string, unknown>): void {
     const requiredFields = ['targetPath', 'preloadPath', 'registerPath', 'rendererPath'];
     
     for (const field of requiredFields) {
@@ -145,17 +165,17 @@ export class ConfigManager {
     }
 
     // ignoresフィールドの検証
-    if (config.ignores !== undefined) {
-      if (!Array.isArray(config.ignores)) {
-        this.addError('ignores', '配列である必要があります', config.ignores);
-      } else if (!config.ignores.every((item: any) => typeof item === 'string')) {
-        this.addError('ignores', 'すべての要素が文字列である必要があります', config.ignores);
+    if (config['ignores'] !== undefined) {
+      if (!Array.isArray(config['ignores'])) {
+        this.addError('ignores', '配列である必要があります', config['ignores']);
+      } else if (!(config['ignores'] as unknown[]).every((item: unknown) => typeof item === 'string')) {
+        this.addError('ignores', 'すべての要素が文字列である必要があります', config['ignores']);
       }
     }
 
     // パスの存在確認
-    if (config.targetPath && typeof config.targetPath === 'string') {
-      const targetPath = path.resolve(config.targetPath);
+    if (config['targetPath'] && typeof config['targetPath'] === 'string') {
+      const targetPath = path.resolve(config['targetPath'] as string);
       if (!fs.existsSync(targetPath)) {
         this.addError('targetPath', 'ディレクトリが存在しません', targetPath);
       } else if (!fs.statSync(targetPath).isDirectory()) {
@@ -192,7 +212,7 @@ export class ConfigManager {
    * @param message - エラーメッセージ
    * @param value - 値
    */
-  private addError(field: string, message: string, value?: any): void {
+  private addError(field: string, message: string, value?: unknown): void {
     this.errors.push({ field, message, value });
   }
 
@@ -253,7 +273,7 @@ export async function loadConfig(configPath: string): Promise<ExtendedAutoCodeOp
  * @param config - 設定オプション
  * @returns 検証結果
  */
-export function validateConfig(config: any): ConfigValidationResult {
+export function validateConfig(config: unknown): ConfigValidationResult {
   const manager = new ConfigManager();
   try {
     manager['validateAndNormalize'](config);

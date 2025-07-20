@@ -175,7 +175,7 @@ export class FileManager {
       await fs.promises.mkdir(dirPath, { recursive: true });
     } catch (error) {
       // ディレクトリが既に存在する場合は無視
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      if ((error as { code?: string }).code !== 'EEXIST') {
         throw error;
       }
     }

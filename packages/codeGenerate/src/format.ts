@@ -248,7 +248,7 @@ class TypeDefinitionGenerator extends BaseGenerator {
     );
   }
 
-  private generateTypeImports(packages: PackageInfo[], zodInfos: ZodObjectInfo[]): string {
+  private generateTypeImports(packages: PackageInfo[], _zodInfos: ZodObjectInfo[]): string {
     const imports: string[] = [];
     
     // API関数の型をインポート

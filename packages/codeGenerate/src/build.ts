@@ -3,6 +3,8 @@
  * Phase 2-3の機能を統合し、設定に基づいた完全なビルドプロセスを構築
  */
 
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { parseTypeScriptFiles } from './parse.js';
 import { analyzeZodSchemas } from './zod.js';
 import { generatePreloadScript, generateHandlers, generateTypeDefinitions } from './format.js';
@@ -10,9 +12,7 @@ import { fileManager, type FileManager } from './fileManager.js';
 import type { 
   BuildResult, 
   PackageInfo, 
-  ZodObjectInfo, 
   AnalysisResult,
-  AnalysisStatistics,
   AnalysisError
 } from './types.js';
 import type { AutoCodeOption } from './index.js';
@@ -78,10 +78,10 @@ export interface BuildContext {
  * シンプルなロガー
  */
 export interface Logger {
-  debug(message: string, ...args: any[]): void;
-  info(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  error(message: string, ...args: any[]): void;
+  debug(message: string, ...args: unknown[]): void;
+  info(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
 }
 
 /**
@@ -313,7 +313,7 @@ export class BuildManager {
    * @param context - ビルドコンテキスト
    * @returns エラー時のビルド結果
    */
-  private handleBuildError(error: any, context: BuildContext): ExtendedBuildResult {
+  private handleBuildError(error: unknown, context: BuildContext): ExtendedBuildResult {
     const endTime = Date.now();
     const errorMessage = error instanceof Error ? error.message : String(error);
 
@@ -351,16 +351,16 @@ export class BuildManager {
     const currentLevel = levels[logLevel as keyof typeof levels] ?? 1;
 
     return {
-      debug: (message: string, ...args: any[]) => {
+      debug: (message: string, ...args: unknown[]): void => {
         if (currentLevel <= 0) console.log(`[DEBUG] ${message}`, ...args);
       },
-      info: (message: string, ...args: any[]) => {
+      info: (message: string, ...args: unknown[]): void => {
         if (currentLevel <= 1) console.log(`[INFO] ${message}`, ...args);
       },
-      warn: (message: string, ...args: any[]) => {
+      warn: (message: string, ...args: unknown[]): void => {
         if (currentLevel <= 2) console.warn(`[WARN] ${message}`, ...args);
       },
-      error: (message: string, ...args: any[]) => {
+      error: (message: string, ...args: unknown[]): void => {
         if (currentLevel <= 3) console.error(`[ERROR] ${message}`, ...args);
       }
     };
@@ -387,6 +387,345 @@ export class BuildManager {
 }
 
 /**
+ * Phase 6: 差分ビルド機能の追加
+ */
+
+import type { FileChangeEvent } from './watch.js';
+import { BuildCache } from './cache.js';
+
+/**
+ * 差分ビルドの結果
+ */
+export interface IncrementalBuildResult {
+  /** ビルドが成功したかどうか */
+  success: boolean;
+  /** 処理されたファイル数 */
+  processedFiles: number;
+  /** 再生成された出力数 */
+  regeneratedOutputs: string[];
+  /** ビルド時間（ミリ秒） */
+  duration: number;
+  /** キャッシュヒット数 */
+  cacheHits: number;
+  /** キャッシュミス数 */
+  cacheMisses: number;
+  /** スキップされたファイル数 */
+  skippedFiles: number;
+}
+
+/**
+ * ビルドプラン
+ */
+export interface BuildPlan {
+  /** 解析が必要なファイル */
+  filesToParse: string[];
+  /** 再生成が必要な出力 */
+  outputsToRegenerate: Set<string>;
+  /** 影響を受けるパッケージ */
+  affectedPackages: string[];
+  /** 使用可能なキャッシュエントリ */
+  cachedResults: Map<string, PackageInfo>;
+}
+
+/**
+ * ビルドプラン実行結果
+ */
+export interface BuildPlanResult {
+  /** 再生成された出力のリスト */
+  regeneratedOutputs: string[];
+  /** 実行時間（ミリ秒） */
+  duration: number;
+  /** 解析されたファイル数 */
+  analyzedFiles: number;
+  /** キャッシュから取得されたファイル数 */
+  cachedFiles: number;
+}
+
+/**
+ * インクリメンタルビルダー
+ * キャッシュシステムと連携して効率的な差分ビルドを実行
+ */
+export class IncrementalBuilder {
+  private cache: BuildCache;
+  private buildManager: BuildManager;
+  private fileManager: FileManager;
+
+  constructor(
+    cache?: BuildCache,
+    buildManager?: BuildManager,
+    fileManagerInstance?: FileManager
+  ) {
+    this.cache = cache || new BuildCache();
+    this.buildManager = buildManager || new BuildManager();
+    this.fileManager = fileManagerInstance || fileManager;
+  }
+
+  /**
+   * インクリメンタルビルドを実行
+   */
+  async performIncrementalBuild(
+    changes: FileChangeEvent[],
+    option: ExtendedAutoCodeOption
+  ): Promise<IncrementalBuildResult> {
+    const startTime = Date.now();
+    
+    try {
+      // Step 1: 影響を受けるファイルを分析
+      const affectedFiles = await this.analyzeAffectedFiles(changes);
+      
+      // Step 2: ビルドプランを作成
+      const buildPlan = await this.createBuildPlan(affectedFiles, option);
+      
+      // Step 3: ビルドプランを実行
+      const result = await this.executeBuildPlan(buildPlan, option);
+      
+      const duration = Date.now() - startTime;
+      const cacheStats = this.cache.getStats();
+      
+      return {
+        success: true,
+        processedFiles: affectedFiles.length,
+        regeneratedOutputs: result.regeneratedOutputs,
+        duration,
+        cacheHits: cacheStats.hits,
+        cacheMisses: cacheStats.misses,
+        skippedFiles: affectedFiles.length - result.analyzedFiles
+      };
+      
+    } catch (error) {
+      console.error('[IncrementalBuilder] 差分ビルドでエラーが発生:', error);
+      
+      return {
+        success: false,
+        processedFiles: 0,
+        regeneratedOutputs: [],
+        duration: Date.now() - startTime,
+        cacheHits: 0,
+        cacheMisses: 0,
+        skippedFiles: 0
+      };
+    }
+  }
+
+  /**
+   * 影響を受けるファイルを分析
+   */
+  private async analyzeAffectedFiles(changes: FileChangeEvent[]): Promise<string[]> {
+    const directlyAffected = new Set<string>();
+    const dependentFiles = new Set<string>();
+    
+    // 直接変更されたファイルを収集
+    for (const change of changes) {
+      if (change.type === 'unlink') {
+        // 削除されたファイルのキャッシュを無効化
+        this.cache.invalidate(change.path);
+      } else {
+        directlyAffected.add(change.path);
+      }
+    }
+    
+    // 依存関係を辿って影響を受けるファイルを特定
+    for (const filePath of directlyAffected) {
+      const dependents = await this.findDependentFiles(filePath);
+      dependents.forEach(dep => dependentFiles.add(dep));
+    }
+    
+    return [...new Set([...directlyAffected, ...dependentFiles])];
+  }
+
+  /**
+   * 依存関係のあるファイルを検索
+   */
+  private async findDependentFiles(filePath: string): Promise<string[]> {
+    const dependents: string[] = [];
+    
+    try {
+      // ファイルの内容を解析してimport文を検索
+      const targetDir = path.dirname(filePath);
+      const files = await this.fileManager.scanTargetFiles(targetDir, [], []);
+      
+      for (const file of files) {
+        if (file === filePath) continue;
+        
+        try {
+          const content = await fs.readFile(file, 'utf8');
+          const relativePath = path.relative(path.dirname(file), filePath);
+          
+          // import文でこのファイルを参照しているかチェック
+          if (this.hasImportReference(content, relativePath, filePath)) {
+            dependents.push(file);
+          }
+        } catch {
+          // ファイル読み込みエラーは無視
+        }
+      }
+    } catch (error) {
+      console.warn(`[IncrementalBuilder] 依存関係の分析に失敗: ${filePath}`, error);
+    }
+    
+    return dependents;
+  }
+
+  /**
+   * ファイルがimport文で参照されているかチェック
+   */
+  private hasImportReference(content: string, relativePath: string, absolutePath: string): boolean {
+    const importRegex = /import\s+.*\s+from\s+['"`]([^'"`]+)['"`]/g;
+    let match;
+    
+    while ((match = importRegex.exec(content)) !== null) {
+      const importPath = match[1];
+      
+      // 相対パスまたは絶対パスでマッチするかチェック
+      if (importPath && (
+          importPath.includes(path.basename(absolutePath, '.ts')) ||
+          importPath.includes(relativePath.replace('.ts', '')))) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * ビルドプランを作成
+   */
+  private async createBuildPlan(
+    affectedFiles: string[],
+    option: ExtendedAutoCodeOption
+  ): Promise<BuildPlan> {
+    const plan: BuildPlan = {
+      filesToParse: [],
+      outputsToRegenerate: new Set(),
+      affectedPackages: [],
+      cachedResults: new Map()
+    };
+    
+    for (const filePath of affectedFiles) {
+      // キャッシュから結果を取得を試行
+      const cached = await this.cache.getParseResult(filePath);
+      
+      if (cached) {
+        plan.cachedResults.set(filePath, cached);
+      } else {
+        plan.filesToParse.push(filePath);
+      }
+      
+      // このファイルの変更がどの出力に影響するかを判定
+      const affectedOutputs = this.determineAffectedOutputs(filePath, option);
+      affectedOutputs.forEach(output => plan.outputsToRegenerate.add(output));
+      
+      // 影響を受けるパッケージを記録
+      const packageName = this.getPackageNameFromPath(filePath);
+      if (packageName && !plan.affectedPackages.includes(packageName)) {
+        plan.affectedPackages.push(packageName);
+      }
+    }
+    
+    return plan;
+  }
+
+  /**
+   * 影響を受ける出力を判定
+   */
+  private determineAffectedOutputs(_filePath: string, _option: ExtendedAutoCodeOption): string[] {
+    const outputs: string[] = [];
+    
+    // すべての出力が影響を受ける（将来的にはより細かい判定が可能）
+    outputs.push('preload', 'handler', 'types');
+    
+    return outputs;
+  }
+
+  /**
+   * ファイルパスからパッケージ名を取得
+   */
+  private getPackageNameFromPath(filePath: string): string {
+    return path.basename(filePath, path.extname(filePath));
+  }
+
+  /**
+   * ビルドプランを実行
+   */
+  private async executeBuildPlan(
+    plan: BuildPlan,
+    option: ExtendedAutoCodeOption
+  ): Promise<BuildPlanResult> {
+    const startTime = Date.now();
+    const regeneratedOutputs: string[] = [];
+    
+    // Step 1: 必要なファイルのみを解析
+    const parseResults = new Map<string, PackageInfo>();
+    
+    // キャッシュされた結果を使用
+    for (const [filePath, result] of plan.cachedResults) {
+      parseResults.set(filePath, result);
+    }
+    
+    // 新しく解析が必要なファイルを処理
+    if (plan.filesToParse.length > 0) {
+      const newResults = await parseTypeScriptFiles(
+        option.targetPath, 
+        option.ignores,
+        {
+          targetPath: option.targetPath,
+          ignores: option.ignores,
+          excludePatterns: plan.filesToParse, // 指定されたファイルのみを解析
+          concurrency: option.advanced?.concurrency || 4,
+          verbose: option.advanced?.verbose || false
+        }
+      );
+      
+      // 結果をキャッシュに保存
+      for (const pkg of newResults) {
+        parseResults.set(pkg.filePath, pkg);
+        await this.cache.setParseResult(pkg.filePath, pkg);
+      }
+    }
+    
+    // Step 2: 影響を受ける出力のみを再生成
+    const packages = Array.from(parseResults.values());
+    
+    if (plan.outputsToRegenerate.has('preload')) {
+      const preloadContent = generatePreloadScript(packages);
+      await this.fileManager.writeGeneratedFile(option.preloadPath, preloadContent);
+      regeneratedOutputs.push('preload');
+    }
+    
+    if (plan.outputsToRegenerate.has('handler')) {
+      const handlerContent = generateHandlers(packages, option.errorHandler);
+      await this.fileManager.writeGeneratedFile(option.registerPath, handlerContent);
+      regeneratedOutputs.push('handler');
+    }
+    
+    if (plan.outputsToRegenerate.has('types')) {
+      // Zodスキーマも必要に応じて再解析
+      const zodSchemas = await analyzeZodSchemas(option.targetPath, {
+        targetPath: option.targetPath,
+        analyzeDeepNesting: true,
+        maxNestingDepth: 10
+      });
+      
+      const typesContent = generateTypeDefinitions(packages, zodSchemas);
+      await this.fileManager.writeGeneratedFile(option.rendererPath, typesContent);
+      regeneratedOutputs.push('types');
+    }
+    
+    return {
+      regeneratedOutputs,
+      duration: Date.now() - startTime,
+      analyzedFiles: plan.filesToParse.length,
+      cachedFiles: plan.cachedResults.size
+    };
+  }
+}
+
+/**
  * デフォルトのビルドマネージャーインスタンス
  */
 export const buildManager = new BuildManager();
+
+/**
+ * デフォルトのインクリメンタルビルダーインスタンス
+ */
+export const incrementalBuilder = new IncrementalBuilder();
