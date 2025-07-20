@@ -1,5 +1,10 @@
 // Phase 2以降で実装される関数のプレースホルダー
 
+// 詳細な型定義を再エクスポート
+export * from './types.js';
+import type { BuildResult } from './types.js';
+
+// 既存の設定インターフェース（後方互換性のため維持）
 export interface AutoCodeOption {
   targetPath: string;
   ignores: string[];
@@ -14,13 +19,8 @@ export interface AutoCodeOption {
   };
 }
 
-export interface ZodObjectInfo {
-  name: string;
-  path: string;
-  fields: FieldInfo[];
-  importPath: string;
-}
-
+// 後方互換性のための旧型定義（非推奨）
+/** @deprecated Use detailed types from types.ts instead */
 export interface FieldInfo {
   name: string;
   type: string;
@@ -28,30 +28,12 @@ export interface FieldInfo {
   defaultValue?: unknown;
 }
 
-export interface PackageInfo {
-  packageName: string;
-  functions: FunctionInfo[];
-}
-
-export interface FunctionInfo {
-  name: string;
-  request: ParamInfo[];
-  response: string;
-  isAsync: boolean;
-  filePath: string;
-  importPath: string;
-}
-
+/** @deprecated Use detailed types from types.ts instead */
 export interface ParamInfo {
   name: string;
   type: string;
   isOptional: boolean;
   defaultValue?: string;
-}
-
-export interface BuildResult {
-  zodObjectInfos: ZodObjectInfo[];
-  packages: PackageInfo[];
 }
 
 /**
