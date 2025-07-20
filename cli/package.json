@@ -2,6 +2,7 @@
   "name": "@electron-flow/cli",
   "version": "0.0.1",
   "description": "electron-flowのコマンドラインインターフェース",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -25,6 +26,7 @@
   },
   "dependencies": {
     "@electron-flow/code-generate": "file:../packages/codeGenerate",
+    "chalk": "^5.4.1",
     "commander": "^12.0.0"
   },
   "devDependencies": {
