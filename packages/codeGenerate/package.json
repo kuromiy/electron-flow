@@ -26,6 +26,9 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
+    "test": "npx tsx misc/test-validation.ts",
+    "test:debug": "npx tsx misc/direct-test.ts",
+    "test:ast": "npx tsx misc/ast-debug.ts",
     "prepublishOnly": "npm run clean && npm run build"
   },
   "dependencies": {
