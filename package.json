@@ -1,0 +1,43 @@
+{
+	"name": "electron-flow",
+	"version": "1.0.0",
+	"description": "A simple utility library with helpful functions",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"postinstall": "npm run build",
+		"test": "echo \"No tests specified\"",
+		"prepare": "husky",
+		"lint": "npx @biomejs/biome check",
+		"check": "tsc --noEmit"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/kuromiy/electron-flow.git"
+	},
+	"keywords": [
+		"utility",
+		"library",
+		"typescript",
+		"functions"
+	],
+	"author": "kuromiya",
+	"license": "UNLICENSED",
+	"type": "module",
+	"bugs": {
+		"url": "https://github.com/kuromiy/electron-flow/issues"
+	},
+	"homepage": "https://github.com/kuromiy/electron-flow#readme",
+	"devDependencies": {
+		"@biomejs/biome": "2.2.2",
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
+		"@types/node": "^24.3.1",
+		"husky": "^9.1.7"
+	},
+	"dependencies": {
+		"typescript": "^5.9.2",
+		"zod": "^4.1.5"
+	}
+}
