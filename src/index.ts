@@ -157,6 +157,11 @@ export async function watchBuild({
 			zodObjectInfos = zodObjectInfos.filter((info) => info.path !== fullPath);
 			sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
+			// 配列が空になった場合のチェック
+			if (zodObjectInfos.length === 0 && sortedPackages.length === 0) {
+				logger.info("All files have been deleted, generating empty templates");
+			}
+
 			sortedPackages.sort((a, b) => a.path.localeCompare(b.path));
 			sortedPackages.forEach((pkg) => {
 				pkg.func.sort((a, b) => a.name.localeCompare(b.name));
