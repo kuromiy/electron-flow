@@ -7,7 +7,7 @@ describe("Electron IPC自動生成", () => {
 	it("APIディレクトリからregister、preload、rendererファイルを正しく生成する", async () => {
 		// 準備
 		const options = {
-			targetDirPath: "./test/fixture/input/apis",
+			targetDirPath: "./test/fixture/input/apis1",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
 			registerPath: "./test/output/001/register.ts",
@@ -46,6 +46,53 @@ describe("Electron IPC自動生成", () => {
 		);
 		const expectedContent3 = await readFile(
 			"./test/fixture/expected/001/renderer.tsx",
+			"utf-8",
+		);
+		strictEqual(actualContent3, expectedContent3);
+	});
+
+	it("引数なし関数のケースで_: unknownが生成される", async () => {
+		// 準備
+		const options = {
+			targetDirPath: "./test/fixture/input/apis2",
+			contextPath: "./test/fixture/input/context.ts",
+			ignores: [],
+			registerPath: "./test/output/002/register.ts",
+			preloadPath: "./test/output/002/preload.ts",
+			rendererPath: "./test/output/002/renderer.tsx",
+		};
+
+		// 実行
+		setLogLevel(LogLevel.ERROR);
+		await build(options);
+
+		// 検証
+		const actualContent = await readFile(
+			"./test/output/002/register.ts",
+			"utf-8",
+		);
+		const expectedContent = await readFile(
+			"./test/fixture/expected/002/register.ts",
+			"utf-8",
+		);
+		strictEqual(actualContent, expectedContent);
+
+		const actualContent2 = await readFile(
+			"./test/output/002/preload.ts",
+			"utf-8",
+		);
+		const expectedContent2 = await readFile(
+			"./test/fixture/expected/002/preload.ts",
+			"utf-8",
+		);
+		strictEqual(actualContent2, expectedContent2);
+
+		const actualContent3 = await readFile(
+			"./test/output/002/renderer.tsx",
+			"utf-8",
+		);
+		const expectedContent3 = await readFile(
+			"./test/fixture/expected/002/renderer.tsx",
 			"utf-8",
 		);
 		strictEqual(actualContent3, expectedContent3);

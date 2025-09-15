@@ -47,8 +47,10 @@ export function formatRegister(
 
 	const handlerStatements = packgaeInfos.flatMap((pkg) => {
 		return pkg.func.map((func) => {
+			const argsParam =
+				func.request.length > 0 ? "args: unknown" : "_: unknown";
 			return `"${func.name}": (ctx: Omit<Context, "event">) => {
-        return async (event: IpcMainInvokeEvent, args: any) => {
+        return async (event: IpcMainInvokeEvent, ${argsParam}) => {
             try {
                 const result = await ${func.name}({ ...ctx, event }, ${func.request.length > 0 ? `args` : ``});
                 return success(result);
@@ -216,7 +218,7 @@ export function formatRendererIF(
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 // 関数型の戻り値を取得し、Promise を外す型ユーティリティ
-type ReturnTypeUnwrapped<T> = T extends (...args: any[]) => infer R
+type ReturnTypeUnwrapped<T> = T extends (...args: unknown[]) => infer R
     ? UnwrapPromise<R>
     : never;
 `
