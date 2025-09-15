@@ -1,4 +1,4 @@
-import { statSync, watch } from "node:fs";
+import { existsSync, statSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { formatPreload, formatRegister, formatRendererIF } from "./format.js";
@@ -46,9 +46,19 @@ export async function build({
 	contextPath,
 	customErrorHandler,
 }: AutoCodeOption) {
+	if (!existsSync(targetDirPath)) {
+		throw new Error(`Target directory does not exist: ${targetDirPath}`);
+	}
+
 	const files = await readFilePaths(targetDirPath);
 	logger.info(`Found ${files.length} files to process`);
 	logger.debugObject("File list:", files);
+
+	// ファイルが0個の場合は後続の処理をスキップして空の結果を返す
+	if (files.length === 0) {
+		logger.info("No files found in targetDirPath, skipping build");
+		return { zodObjectInfos: [], sortedPackages: [] };
+	}
 
 	const zodObjectInfos = await getZodObjectInfos(files);
 	logger.info(`Found ${zodObjectInfos.length} Zod objects`);
@@ -111,6 +121,10 @@ export async function watchBuild({
 	contextPath,
 	customErrorHandler,
 }: AutoCodeOption) {
+	if (!existsSync(targetDirPath)) {
+		throw new Error(`Target directory does not exist: ${targetDirPath}`);
+	}
+
 	// 初回ビルド
 	let { zodObjectInfos, sortedPackages } = await build({
 		targetDirPath,
@@ -143,6 +157,11 @@ export async function watchBuild({
 			zodObjectInfos = zodObjectInfos.filter((info) => info.path !== fullPath);
 			sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
+			// 配列が空になった場合のチェック
+			if (zodObjectInfos.length === 0 && sortedPackages.length === 0) {
+				logger.info("All files have been deleted, generating empty templates");
+			}
+
 			sortedPackages.sort((a, b) => a.path.localeCompare(b.path));
 			sortedPackages.forEach((pkg) => {
 				pkg.func.sort((a, b) => a.name.localeCompare(b.name));
@@ -160,6 +179,11 @@ export async function watchBuild({
 				zodObjectInfos,
 				dirname(rendererPath),
 			);
+
+			// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
+			await mkdir(dirname(preloadPath), { recursive: true });
+			await mkdir(dirname(registerPath), { recursive: true });
+			await mkdir(dirname(rendererPath), { recursive: true });
 
 			await writeFile(preloadPath, preloadText);
 			await writeFile(registerPath, registerText);
@@ -203,6 +227,11 @@ export async function watchBuild({
 			zodObjectInfos,
 			dirname(rendererPath),
 		);
+
+		// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
+		await mkdir(dirname(preloadPath), { recursive: true });
+		await mkdir(dirname(registerPath), { recursive: true });
+		await mkdir(dirname(rendererPath), { recursive: true });
 
 		await writeFile(preloadPath, preloadText);
 		await writeFile(registerPath, registerText);
