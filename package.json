@@ -1,8 +1,9 @@
 {
 	"name": "electron-flow",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "A simple utility library with helpful functions",
 	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",
