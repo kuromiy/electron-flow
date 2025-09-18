@@ -5,12 +5,14 @@ import { formatPreload, formatRegister, formatRendererIF } from "./format.js";
 import { logger } from "./logger.js";
 import { parseFile } from "./parse.js";
 import { readFilePaths } from "./utils.js";
-import { getZodObjectInfos } from "./zod.js";
+import { getZodObjectInfos, type ZodImportOptions } from "./zod.js";
 
 // ロガー設定関数をエクスポート
 export { LogLevel, setLogLevel, setLogLevelByName } from "./logger.js";
 // Result型とError型を再エクスポート
 export * from "./result.js";
+// ZodImportOptionsをエクスポート
+export type { ZodImportOptions } from "./zod.js";
 
 /**
  * 自動コード生成のオプション設定
@@ -35,6 +37,8 @@ type AutoCodeOption = {
 		/** エクスポートされた関数名 */
 		functionName: string;
 	};
+	/** Zodインポート設定（オプション） */
+	zodImportOptions?: ZodImportOptions;
 };
 
 export async function build({
@@ -45,6 +49,7 @@ export async function build({
 	rendererPath,
 	contextPath,
 	customErrorHandler,
+	zodImportOptions,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -60,7 +65,11 @@ export async function build({
 		return { zodObjectInfos: [], sortedPackages: [] };
 	}
 
-	const zodObjectInfos = await getZodObjectInfos(files);
+	const zodObjectInfos = await getZodObjectInfos(
+		files,
+		[],
+		zodImportOptions || {},
+	);
 	logger.info(`Found ${zodObjectInfos.length} Zod objects`);
 	logger.debugObject("Zod objects detail:", zodObjectInfos);
 
@@ -120,6 +129,7 @@ export async function watchBuild({
 	rendererPath,
 	contextPath,
 	customErrorHandler,
+	zodImportOptions,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -134,6 +144,7 @@ export async function watchBuild({
 		rendererPath,
 		contextPath,
 		...(customErrorHandler && { customErrorHandler }),
+		...(zodImportOptions && { zodImportOptions }),
 	});
 
 	// ファイル監視
@@ -207,7 +218,11 @@ export async function watchBuild({
 		zodObjectInfos = zodObjectInfos.filter((info) => info.path !== fullPath);
 		sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
-		zodObjectInfos = await getZodObjectInfos([fullPath], zodObjectInfos);
+		zodObjectInfos = await getZodObjectInfos(
+			[fullPath],
+			zodObjectInfos,
+			zodImportOptions || {},
+		);
 		sortedPackages = parseFile(ignores, [fullPath], sortedPackages);
 
 		sortedPackages.sort((a, b) => a.path.localeCompare(b.path));
