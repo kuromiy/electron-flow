@@ -3,7 +3,7 @@ import type { Context } from "../../fixture/input/context.js";
 import { ipcMain, type IpcMainInvokeEvent } from "electron";
 import { success, failure } from "electron-flow";
 
-import { execute } from "../../fixture/input/apis1/sample1.js";
+import { execute } from "../../fixture/input/with-electron/sample1.js";
 
 export const autoGenerateHandlers = {
     "execute": (ctx: Omit<Context, "event">) => {

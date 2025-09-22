@@ -47,8 +47,7 @@ export function formatRegister(
 
 	const handlerStatements = packgaeInfos.flatMap((pkg) => {
 		return pkg.func.map((func) => {
-			const argsParam =
-				func.request.length > 0 ? "args: unknown" : "_: unknown";
+			const argsParam = func.request.length > 0 ? "args: any" : "_: unknown";
 			return `"${func.name}": (ctx: Omit<Context, "event">) => {
         return async (event: IpcMainInvokeEvent, ${argsParam}) => {
             try {
