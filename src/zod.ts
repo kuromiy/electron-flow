@@ -1,6 +1,9 @@
+import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ZodObject } from "zod";
+
+const require = createRequire(import.meta.url);
 
 /**
  * リクエストに使用しているZodObject情報
@@ -38,7 +41,7 @@ export async function getZodObjectInfos(
 		const absolutePath = resolve(path);
 		// file:// URLに変換
 		const fileUrl = pathToFileURL(absolutePath).href;
-		const modules = await import(fileUrl);
+		const modules = require(fileUrl);
 
 		// modulesの各エクスポートをループ
 		for (const [key, value] of Object.entries(modules)) {

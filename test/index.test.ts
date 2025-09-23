@@ -1,7 +1,6 @@
-import { strictEqual } from "node:assert";
-import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { build, LogLevel, setLogLevel } from "../src/index.js";
+import { assertFileContent } from "./utils/assert.js";
 
 describe("Electron IPC自動生成", () => {
 	it("APIディレクトリからregister、preload、rendererファイルを正しく生成する", async () => {
@@ -20,35 +19,18 @@ describe("Electron IPC自動生成", () => {
 		await build(options);
 
 		// 検証
-		const actualContent = await readFile(
+		await assertFileContent(
 			"./test/output/001/register.ts",
-			"utf-8",
-		);
-		const expectedContent = await readFile(
 			"./test/fixture/expected/001/register.ts",
-			"utf-8",
 		);
-		strictEqual(actualContent, expectedContent);
-
-		const actualContent2 = await readFile(
+		await assertFileContent(
 			"./test/output/001/preload.ts",
-			"utf-8",
-		);
-		const expectedContent2 = await readFile(
 			"./test/fixture/expected/001/preload.ts",
-			"utf-8",
 		);
-		strictEqual(actualContent2, expectedContent2);
-
-		const actualContent3 = await readFile(
+		await assertFileContent(
 			"./test/output/001/renderer.tsx",
-			"utf-8",
-		);
-		const expectedContent3 = await readFile(
 			"./test/fixture/expected/001/renderer.tsx",
-			"utf-8",
 		);
-		strictEqual(actualContent3, expectedContent3);
 	});
 
 	it("引数なし関数のケースで_: unknownが生成される", async () => {
@@ -67,34 +49,17 @@ describe("Electron IPC自動生成", () => {
 		await build(options);
 
 		// 検証
-		const actualContent = await readFile(
+		await assertFileContent(
 			"./test/output/002/register.ts",
-			"utf-8",
-		);
-		const expectedContent = await readFile(
 			"./test/fixture/expected/002/register.ts",
-			"utf-8",
 		);
-		strictEqual(actualContent, expectedContent);
-
-		const actualContent2 = await readFile(
+		await assertFileContent(
 			"./test/output/002/preload.ts",
-			"utf-8",
-		);
-		const expectedContent2 = await readFile(
 			"./test/fixture/expected/002/preload.ts",
-			"utf-8",
 		);
-		strictEqual(actualContent2, expectedContent2);
-
-		const actualContent3 = await readFile(
+		await assertFileContent(
 			"./test/output/002/renderer.tsx",
-			"utf-8",
-		);
-		const expectedContent3 = await readFile(
 			"./test/fixture/expected/002/renderer.tsx",
-			"utf-8",
 		);
-		strictEqual(actualContent3, expectedContent3);
 	});
 });
