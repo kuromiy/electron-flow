@@ -41,7 +41,7 @@ export async function getZodObjectInfos(
 		const absolutePath = resolve(path);
 		// file:// URLに変換
 		const fileUrl = pathToFileURL(absolutePath).href;
-		const modules = await require(fileUrl);
+		const modules = require(fileUrl);
 
 		// modulesの各エクスポートをループ
 		for (const [key, value] of Object.entries(modules)) {

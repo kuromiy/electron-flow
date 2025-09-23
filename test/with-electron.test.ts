@@ -1,7 +1,6 @@
-import { strictEqual } from "node:assert";
-import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { build, LogLevel, setLogLevel } from "../src/index.js";
+import { assertFileContent } from "./utils/assert.js";
 
 describe("Electron IPC自動生成 electronモジュールインポート時エラーが発生しないこと", () => {
 	it("エラーが発生しないこと", async () => {
@@ -20,34 +19,17 @@ describe("Electron IPC自動生成 electronモジュールインポート時エ�
 		await build(options);
 
 		// 検証
-		const actualContent = await readFile(
+		await assertFileContent(
 			"./test/output/with-electron/register.ts",
-			"utf-8",
-		);
-		const expectedContent = await readFile(
 			"./test/fixture/expected/with-electron/register.ts",
-			"utf-8",
 		);
-		strictEqual(actualContent, expectedContent);
-
-		const actualContent2 = await readFile(
+		await assertFileContent(
 			"./test/output/with-electron/preload.ts",
-			"utf-8",
-		);
-		const expectedContent2 = await readFile(
 			"./test/fixture/expected/with-electron/preload.ts",
-			"utf-8",
 		);
-		strictEqual(actualContent2, expectedContent2);
-
-		const actualContent3 = await readFile(
+		await assertFileContent(
 			"./test/output/with-electron/renderer.tsx",
-			"utf-8",
-		);
-		const expectedContent3 = await readFile(
 			"./test/fixture/expected/with-electron/renderer.tsx",
-			"utf-8",
 		);
-		strictEqual(actualContent3, expectedContent3);
 	});
 });
