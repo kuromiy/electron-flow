@@ -50,6 +50,7 @@
 		},
 		"./result": {
 			"import": "./dist/result.js",
+			"require": "./dist/result.js",
 			"types": "./dist/result.d.ts"
 		}
 	}
