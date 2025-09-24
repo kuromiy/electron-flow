@@ -48,7 +48,9 @@ export class Logger {
 
 	constructor(level: LogLevel = LogLevel.INFO, useColor = true) {
 		this.currentLevel = level;
-		this.useColor = useColor && process.stdout.isTTY;
+		// ブラウザ環境対応: processが存在しない場合はfalseとする
+		this.useColor =
+			useColor && typeof process !== "undefined" && process.stdout?.isTTY;
 	}
 
 	/**
@@ -69,7 +71,9 @@ export class Logger {
 	 * カラー出力の有効/無効を設定
 	 */
 	setUseColor(useColor: boolean): void {
-		this.useColor = useColor && process.stdout.isTTY;
+		// ブラウザ環境対応: processが存在しない場合はfalseとする
+		this.useColor =
+			useColor && typeof process !== "undefined" && process.stdout?.isTTY;
 	}
 
 	/**
