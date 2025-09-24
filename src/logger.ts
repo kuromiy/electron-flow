@@ -179,6 +179,11 @@ export class Logger {
  * 環境変数からログレベルを取得
  */
 function getLogLevelFromEnv(): LogLevel {
+	// ブラウザ環境対応: processが存在しない場合はデフォルト値を返す
+	if (typeof process === "undefined" || !process.env) {
+		return LogLevel.INFO;
+	}
+
 	const envLevel = process.env.LOG_LEVEL?.toUpperCase();
 
 	switch (envLevel) {
