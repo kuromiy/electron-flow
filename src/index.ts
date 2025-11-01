@@ -1,7 +1,9 @@
 import { existsSync, statSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { formatPreload, formatRegister, formatRendererIF } from "./format.js";
+import { formatPreload } from "./format/preload.js";
+import { formatRegister } from "./format/register.js";
+import { formatRendererIF } from "./format/renderer.js";
 import { logger } from "./logger.js";
 import { parseFile } from "./parse.js";
 import { readFilePaths } from "./utils.js";
