@@ -37,6 +37,8 @@ type AutoCodeOption = {
 		/** エクスポートされた関数名 */
 		functionName: string;
 	};
+	/** Result型をアンラップして例外ベースのAPIに変換するか（デフォルト: false） */
+	unwrapResults?: boolean;
 };
 
 export async function build({
@@ -47,6 +49,7 @@ export async function build({
 	rendererPath,
 	contextPath,
 	customErrorHandler,
+	unwrapResults = false,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -94,6 +97,7 @@ export async function build({
 		sortedPackages,
 		zodObjectInfos,
 		dirname(rendererPath),
+		unwrapResults,
 	);
 
 	logger.info("Creating output directories...");
@@ -122,6 +126,7 @@ export async function watchBuild({
 	rendererPath,
 	contextPath,
 	customErrorHandler,
+	unwrapResults = false,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -136,6 +141,7 @@ export async function watchBuild({
 		rendererPath,
 		contextPath,
 		...(customErrorHandler && { customErrorHandler }),
+		unwrapResults,
 	});
 
 	// ファイル監視
@@ -180,6 +186,7 @@ export async function watchBuild({
 				sortedPackages,
 				zodObjectInfos,
 				dirname(rendererPath),
+				unwrapResults,
 			);
 
 			// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
@@ -228,6 +235,7 @@ export async function watchBuild({
 			sortedPackages,
 			zodObjectInfos,
 			dirname(rendererPath),
+			unwrapResults,
 		);
 
 		// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成

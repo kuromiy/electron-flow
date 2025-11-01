@@ -62,4 +62,35 @@ describe("Electron IPC自動生成", () => {
 			"./test/fixture/expected/002/renderer.tsx",
 		);
 	});
+
+	it("unwrapResults=trueでResult型をアンラップして例外ベースのAPIが生成される", async () => {
+		// 準備
+		const options = {
+			targetDirPath: "./test/fixture/input/apis1",
+			contextPath: "./test/fixture/input/context.ts",
+			ignores: [],
+			registerPath: "./test/output/003/register.ts",
+			preloadPath: "./test/output/003/preload.ts",
+			rendererPath: "./test/output/003/renderer.tsx",
+			unwrapResults: true,
+		};
+
+		// 実行
+		setLogLevel(LogLevel.ERROR);
+		await build(options);
+
+		// 検証
+		await assertFileContent(
+			"./test/output/003/register.ts",
+			"./test/fixture/expected/003/register.ts",
+		);
+		await assertFileContent(
+			"./test/output/003/preload.ts",
+			"./test/fixture/expected/003/preload.ts",
+		);
+		await assertFileContent(
+			"./test/output/003/renderer.tsx",
+			"./test/fixture/expected/003/renderer.tsx",
+		);
+	});
 });

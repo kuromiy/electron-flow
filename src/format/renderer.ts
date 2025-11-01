@@ -6,6 +6,7 @@ export function formatRendererIF(
 	packages: PackageInfo[],
 	zodObjectInfos: ZodObjectInfo[],
 	outputPath: string,
+	unwrapResults = false,
 ) {
 	const importStatements = createImportStatement(
 		outputPath,
@@ -38,9 +39,13 @@ export function formatRendererIF(
 	});
 
 	// インターフェース定義
-	const interfaceLines = functions.map((func) => {
-		return `${func.name}: (${func.request.map((line) => `${line.name}: ${line.type}`).join(", ")}) => Promise<Result<ReturnTypeUnwrapped<typeof ${func.name}>, Error>>`;
-	});
+	const interfaceLines = unwrapResults
+		? functions.map((func) => {
+				return `${func.name}: (${func.request.map((line) => `${line.name}: ${line.type}`).join(", ")}) => Promise<ReturnTypeUnwrapped<typeof ${func.name}>>`;
+			})
+		: functions.map((func) => {
+				return `${func.name}: (${func.request.map((line) => `${line.name}: ${line.type}`).join(", ")}) => Promise<Result<ReturnTypeUnwrapped<typeof ${func.name}>, Error>>`;
+			});
 
 	// window.api メソッドの型定義
 	const windowApiMethods = functions.map((func) => {
@@ -48,15 +53,29 @@ export function formatRendererIF(
 	});
 
 	// 実装クラスのメソッド
-	const implementationMethods = functions.map((func) => {
-		const params = func.request
-			.map((req) => `${req.name}: ${req.type}`)
-			.join(", ");
-		const args = func.request.map((req) => req.name).join(", ");
-		return `async ${func.name}(${params}) {
+	const implementationMethods = unwrapResults
+		? functions.map((func) => {
+				const params = func.request
+					.map((req) => `${req.name}: ${req.type}`)
+					.join(", ");
+				const args = func.request.map((req) => req.name).join(", ");
+				return `async ${func.name}(${params}) {
+        const response = await window.api.${func.name}(${args});
+        if (isFailure(response)) {
+            throw response.value;
+        }
+        return response.value;
+    }`;
+			})
+		: functions.map((func) => {
+				const params = func.request
+					.map((req) => `${req.name}: ${req.type}`)
+					.join(", ");
+				const args = func.request.map((req) => req.name).join(", ");
+				return `async ${func.name}(${params}) {
         return window.api.${func.name}(${args});
     }`;
-	});
+			});
 
 	// 空配列の場合でも有効なコードを生成
 	const hasFunctions = functions.length > 0;
@@ -64,7 +83,9 @@ export function formatRendererIF(
 		importStatements.length > 0 ? `${importStatements.join("\n")}\n` : "";
 
 	const resultImport = hasFunctions
-		? 'import type { Result } from "electron-flow";'
+		? unwrapResults
+			? 'import { isFailure, type Result } from "electron-flow/result";'
+			: 'import type { Result } from "electron-flow";'
 		: "";
 
 	const apiContent =
