@@ -3,7 +3,7 @@ import type { PackageInfo } from "../parse.js";
 import { createImportStatement } from "./utils.js";
 
 export function formatRegister(
-	packgaeInfos: PackageInfo[],
+	packageInfos: PackageInfo[],
 	outputPath: string,
 	contextPath: string,
 	customErrorHandler?: {
@@ -13,7 +13,7 @@ export function formatRegister(
 ) {
 	const importStatements = createImportStatement(
 		outputPath,
-		packgaeInfos,
+		packageInfos,
 		(functionNames, importPath) => {
 			return `import { ${functionNames} } from "${importPath}.js";`;
 		},
@@ -23,7 +23,7 @@ export function formatRegister(
 		? `return ${customErrorHandler.functionName}(e);`
 		: `return failure(e);`;
 
-	const handlerStatements = packgaeInfos.flatMap((pkg) => {
+	const handlerStatements = packageInfos.flatMap((pkg) => {
 		return pkg.func.map((func) => {
 			const argsParam = func.request.length > 0 ? "args: any" : "_: unknown";
 			return `"${func.name}": (ctx: Omit<Context, "event">) => {

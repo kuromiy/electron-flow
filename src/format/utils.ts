@@ -17,13 +17,13 @@ export function createImportStatement(
 }
 
 export function createBodyStatement(
-	packgaes: PackageInfo[],
+	packages: PackageInfo[],
 	zodObjectInfos: ZodObjectInfo[],
 	apply: (
 		functions: { name: string; request: { name: string; type: string }[] }[],
 	) => string[],
 ) {
-	const functions = packgaes.flatMap((pkg) => {
+	const functions = packages.flatMap((pkg) => {
 		return pkg.func.flatMap((func) => {
 			const requests = func.request.reduce(
 				(prev, curr) => {
@@ -39,10 +39,6 @@ export function createBodyStatement(
 							return prev.concat(temp);
 						}
 					}
-					// 来ないはず。。。例外投げるべきかも
-					// console.log("!!!! WARNING !!!!", curr.type);
-					// console.log(pkg.relations);
-					// console.log(zodObjectInfos);
 					return prev.concat({ name: curr.name, type: curr.type });
 				},
 				[] as { name: string; type: string }[],
