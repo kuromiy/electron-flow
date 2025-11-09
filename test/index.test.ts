@@ -93,4 +93,34 @@ describe("Electron IPC自動生成", () => {
 			"./test/fixture/expected/003/renderer.tsx",
 		);
 	});
+
+	it("別ファイルに定義されたZodスキーマを正しく解析できる", async () => {
+		// 準備
+		const options = {
+			targetDirPath: "./test/fixture/input/apis-with-external-schema",
+			contextPath: "./test/fixture/input/context.ts",
+			ignores: [],
+			registerPath: "./test/output/004/register.ts",
+			preloadPath: "./test/output/004/preload.ts",
+			rendererPath: "./test/output/004/renderer.tsx",
+		};
+
+		// 実行
+		setLogLevel(LogLevel.ERROR);
+		await build(options);
+
+		// 検証
+		await assertFileContent(
+			"./test/output/004/register.ts",
+			"./test/fixture/expected/004/register.ts",
+		);
+		await assertFileContent(
+			"./test/output/004/preload.ts",
+			"./test/fixture/expected/004/preload.ts",
+		);
+		await assertFileContent(
+			"./test/output/004/renderer.tsx",
+			"./test/fixture/expected/004/renderer.tsx",
+		);
+	});
 });
