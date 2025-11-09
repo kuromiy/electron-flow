@@ -65,11 +65,17 @@ export async function build({
 		return { zodObjectInfos: [], sortedPackages: [] };
 	}
 
-	const zodObjectInfos = await getZodObjectInfos(files);
+	// parseFileでインポートされたファイルも収集
+	const { packages, importedFiles } = parseFile(ignores, files);
+	logger.info(`Found ${importedFiles.size} imported files`);
+	logger.debugObject("Imported files:", Array.from(importedFiles));
+
+	// targetDirPath内のファイル + インポートされたファイルでZodオブジェクトを収集
+	const allFiles = [...files, ...Array.from(importedFiles)];
+	const zodObjectInfos = await getZodObjectInfos(allFiles);
 	logger.info(`Found ${zodObjectInfos.length} Zod objects`);
 	logger.debugObject("Zod objects detail:", zodObjectInfos);
 
-	const packages = parseFile(ignores, files);
 	const totalFunctions = packages.reduce(
 		(sum, pkg) => sum + pkg.func.length,
 		0,
@@ -216,8 +222,13 @@ export async function watchBuild({
 		zodObjectInfos = zodObjectInfos.filter((info) => info.path !== fullPath);
 		sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
-		zodObjectInfos = await getZodObjectInfos([fullPath], zodObjectInfos);
-		sortedPackages = parseFile(ignores, [fullPath], sortedPackages);
+		// まずparseFileでインポートされたファイルを収集
+		const parseResult = parseFile(ignores, [fullPath], sortedPackages);
+		sortedPackages = parseResult.packages;
+
+		// 変更されたファイル + インポートされたファイルでZodオブジェクトを収集
+		const allFiles = [fullPath, ...Array.from(parseResult.importedFiles)];
+		zodObjectInfos = await getZodObjectInfos(allFiles, zodObjectInfos);
 
 		sortedPackages.sort((a, b) => a.path.localeCompare(b.path));
 		sortedPackages.forEach((pkg) => {

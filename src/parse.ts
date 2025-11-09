@@ -1,4 +1,4 @@
-import { basename, extname } from "node:path";
+import { basename, dirname, extname, resolve } from "node:path";
 import * as ts from "typescript";
 
 type ZodObjectRelationRequest = {
@@ -24,15 +24,32 @@ export type PackageInfo = {
 	relations: ZodObjectRelationRequest[];
 };
 
+/**
+ * import文の相対パスを絶対パスに解決する
+ * @param currentFilePath - 現在のファイルのディレクトリパス
+ * @param importPath - import文で指定された相対パス（例: "../schemas/user-schema.js"）
+ * @returns 解決された絶対パス
+ */
+function resolveImportPath(
+	currentFilePath: string,
+	importPath: string,
+): string {
+	// .js拡張子を.tsに変換（ランタイムではなくソースコードを解析するため）
+	const tsImportPath = importPath.replace(/\.js$/, ".ts");
+	// 絶対パスに解決
+	return resolve(currentFilePath, tsImportPath);
+}
+
 export function parseFile(
 	ignores: string[],
 	paths: string[],
 	packages: PackageInfo[] = [],
-) {
+): { packages: PackageInfo[]; importedFiles: Set<string> } {
 	const ignoreInfo = ignores.map((ignore) => {
 		const [fileName, funcName] = ignore.split(".");
 		return { fileName, funcName };
 	});
+	const importedFiles = new Set<string>();
 	const program = ts.createProgram(paths, {});
 	const checker = program.getTypeChecker();
 
@@ -49,6 +66,21 @@ export function parseFile(
 			.map((info) => info.funcName);
 
 		ts.forEachChild(sourceFile, (node) => {
+			// import文の解析
+			// 他のファイルからインポートされているファイルを収集
+			if (ts.isImportDeclaration(node)) {
+				const moduleSpecifier = node.moduleSpecifier;
+				if (ts.isStringLiteral(moduleSpecifier)) {
+					const importPath = moduleSpecifier.text;
+					// 相対パスの場合のみ処理（node_modulesなどは除外）
+					if (importPath.startsWith("./") || importPath.startsWith("../")) {
+						const currentDir = dirname(path);
+						const resolvedPath = resolveImportPath(currentDir, importPath);
+						importedFiles.add(resolvedPath);
+					}
+				}
+			}
+
 			// リクエストの型解析
 			// 下記のようなコードを想定
 			// export type XxxRequest = z.infer<typeof xxxSchema>;
@@ -155,5 +187,5 @@ export function parseFile(
 		});
 	}
 
-	return packages;
+	return { packages, importedFiles };
 }
