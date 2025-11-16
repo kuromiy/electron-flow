@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, Error>>;
+            ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, Error>>;
+    ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
 }
 
 // サービス実装クラス
