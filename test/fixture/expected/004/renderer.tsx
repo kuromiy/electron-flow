@@ -13,16 +13,16 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            createUser: (name: string, email: string, age: number | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, Error>>;
-            updateUser: (userId: string, name: string | undefined, email: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateUser>, Error>>;
+            createUser: (name: string, email: string, age: number | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
+            updateUser: (userId: string, name: string | undefined, email: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateUser>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    createUser: (name: string, email: string, age: number | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, Error>>;
-    updateUser: (userId: string, name: string | undefined, email: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateUser>, Error>>;
+    createUser: (name: string, email: string, age: number | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
+    updateUser: (userId: string, name: string | undefined, email: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateUser>, unknown>>;
 }
 
 // サービス実装クラス
