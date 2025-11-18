@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { ZodObject } from "zod";
+import { type ZodEnum, ZodObject } from "zod";
 
 const require = createRequire(import.meta.url);
 
@@ -110,6 +110,19 @@ function collectZodObject(value: unknown): string {
 	if (zodType === "ZodOptional") {
 		// TODO: undefinedではなく、?をつけたい。(例: value: string | undefined -> value?: string)
 		return `${collectZodObject(zodValue._def.innerType)} | undefined`;
+	}
+
+	/**
+	 * ZodEnumは下記
+	 * ZodEnum {
+	 *		'~standard': { validate: [Function: validate], vendor: 'zod', version: 1 },
+	 *		def: { type: 'enum', entries: { asc: 'asc', desc: 'desc' } },
+	 *		type: 'enum',
+	 */
+	if (zodType === "ZodEnum") {
+		return Object.keys((zodValue as ZodEnum).def.entries)
+			.map((key) => `"${key}"`)
+			.join(" | ");
 	}
 
 	if (zodType === "ZodDefault") {
