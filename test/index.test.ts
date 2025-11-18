@@ -123,4 +123,34 @@ describe("Electron IPC自動生成", () => {
 			"./test/fixture/expected/004/renderer.tsx",
 		);
 	});
+
+	it("enumを含むスキーマ定義が成功すること", async () => {
+		// 準備
+		const options = {
+			targetDirPath: "./test/fixture/input/apis3",
+			contextPath: "./test/fixture/input/context.ts",
+			ignores: [],
+			registerPath: "./test/output/005/register.ts",
+			preloadPath: "./test/output/005/preload.ts",
+			rendererPath: "./test/output/005/renderer.tsx",
+		};
+
+		// 実行
+		setLogLevel(LogLevel.ERROR);
+		await build(options);
+
+		// 検証
+		await assertFileContent(
+			"./test/output/005/register.ts",
+			"./test/fixture/expected/005/register.ts",
+		);
+		await assertFileContent(
+			"./test/output/005/preload.ts",
+			"./test/fixture/expected/005/preload.ts",
+		);
+		await assertFileContent(
+			"./test/output/005/renderer.tsx",
+			"./test/fixture/expected/005/renderer.tsx",
+		);
+	});
 });
