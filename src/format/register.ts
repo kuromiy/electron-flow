@@ -20,7 +20,7 @@ export function formatRegister(
 	);
 
 	const errorHandlerCode = customErrorHandler
-		? `return ${customErrorHandler.functionName}(e);`
+		? `return ${customErrorHandler.functionName}(e, { ...ctx, event });`
 		: `return failure(e);`;
 
 	const handlerStatements = packageInfos.flatMap((pkg) => {
