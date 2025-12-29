@@ -7,7 +7,6 @@ import { formatRendererIF } from "./format/renderer.js";
 import { logger } from "./logger.js";
 import { parseFile } from "./parse.js";
 import { readFilePaths } from "./utils.js";
-import { getZodObjectInfos } from "./zod.js";
 
 // ロガー設定関数をエクスポート
 export { LogLevel, setLogLevel, setLogLevelByName } from "./logger.js";
@@ -62,19 +61,11 @@ export async function build({
 	// ファイルが0個の場合は後続の処理をスキップして空の結果を返す
 	if (files.length === 0) {
 		logger.info("No files found in targetDirPath, skipping build");
-		return { zodObjectInfos: [], sortedPackages: [] };
+		return { sortedPackages: [] };
 	}
 
 	// parseFileでインポートされたファイルも収集
-	const { packages, importedFiles } = parseFile(ignores, files);
-	logger.info(`Found ${importedFiles.size} imported files`);
-	logger.debugObject("Imported files:", Array.from(importedFiles));
-
-	// targetDirPath内のファイル + インポートされたファイルでZodオブジェクトを収集
-	const allFiles = [...files, ...Array.from(importedFiles)];
-	const zodObjectInfos = await getZodObjectInfos(allFiles);
-	logger.info(`Found ${zodObjectInfos.length} Zod objects`);
-	logger.debugObject("Zod objects detail:", zodObjectInfos);
+	const { packages } = parseFile(ignores, files);
 
 	const totalFunctions = packages.reduce(
 		(sum, pkg) => sum + pkg.func.length,
@@ -92,7 +83,7 @@ export async function build({
 			func: pkg.func.toSorted((a, b) => a.name.localeCompare(b.name)),
 		}));
 
-	const preloadText = formatPreload(zodObjectInfos, sortedPackages);
+	const preloadText = formatPreload(sortedPackages);
 	const registerText = formatRegister(
 		sortedPackages,
 		dirname(registerPath),
@@ -101,7 +92,6 @@ export async function build({
 	);
 	const rendererText = formatRendererIF(
 		sortedPackages,
-		zodObjectInfos,
 		dirname(rendererPath),
 		unwrapResults,
 	);
@@ -121,7 +111,7 @@ export async function build({
 
 	logger.info("Build completed successfully.");
 
-	return { zodObjectInfos, sortedPackages };
+	return { sortedPackages };
 }
 
 export async function watchBuild({
@@ -139,7 +129,7 @@ export async function watchBuild({
 	}
 
 	// 初回ビルド
-	let { zodObjectInfos, sortedPackages } = await build({
+	let { sortedPackages } = await build({
 		targetDirPath,
 		ignores,
 		preloadPath,
@@ -168,11 +158,10 @@ export async function watchBuild({
 		if (!stats) {
 			logger.info(`File deleted: ${fileName}`);
 
-			zodObjectInfos = zodObjectInfos.filter((info) => info.path !== fullPath);
 			sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
 			// 配列が空になった場合のチェック
-			if (zodObjectInfos.length === 0 && sortedPackages.length === 0) {
+			if (sortedPackages.length === 0) {
 				logger.info("All files have been deleted, generating empty templates");
 			}
 
@@ -181,7 +170,7 @@ export async function watchBuild({
 				pkg.func.sort((a, b) => a.name.localeCompare(b.name));
 			});
 
-			const preloadText = formatPreload(zodObjectInfos, sortedPackages);
+			const preloadText = formatPreload(sortedPackages);
 			const registerText = formatRegister(
 				sortedPackages,
 				dirname(registerPath),
@@ -190,7 +179,6 @@ export async function watchBuild({
 			);
 			const rendererText = formatRendererIF(
 				sortedPackages,
-				zodObjectInfos,
 				dirname(rendererPath),
 				unwrapResults,
 			);
@@ -219,23 +207,18 @@ export async function watchBuild({
 
 		logger.info(`File changed: ${fullPath}`);
 
-		zodObjectInfos = zodObjectInfos.filter((info) => info.path !== fullPath);
 		sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
-		// まずparseFileでインポートされたファイルを収集
+		// parseFileで解析
 		const parseResult = parseFile(ignores, [fullPath], sortedPackages);
 		sortedPackages = parseResult.packages;
-
-		// 変更されたファイル + インポートされたファイルでZodオブジェクトを収集
-		const allFiles = [fullPath, ...Array.from(parseResult.importedFiles)];
-		zodObjectInfos = await getZodObjectInfos(allFiles, zodObjectInfos);
 
 		sortedPackages.sort((a, b) => a.path.localeCompare(b.path));
 		sortedPackages.forEach((pkg) => {
 			pkg.func.sort((a, b) => a.name.localeCompare(b.name));
 		});
 
-		const preloadText = formatPreload(zodObjectInfos, sortedPackages);
+		const preloadText = formatPreload(sortedPackages);
 		const registerText = formatRegister(
 			sortedPackages,
 			dirname(registerPath),
@@ -244,7 +227,6 @@ export async function watchBuild({
 		);
 		const rendererText = formatRendererIF(
 			sortedPackages,
-			zodObjectInfos,
 			dirname(rendererPath),
 			unwrapResults,
 		);

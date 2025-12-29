@@ -1,12 +1,8 @@
 import type { PackageInfo } from "../parse.js";
-import type { ZodObjectInfo } from "../zod.js";
 import { createBodyStatement } from "./utils.js";
 
-export function formatPreload(
-	zodObjectInfos: ZodObjectInfo[],
-	packages: PackageInfo[],
-) {
-	const lines = createBodyStatement(packages, zodObjectInfos, (functions) => {
+export function formatPreload(packages: PackageInfo[]) {
+	const lines = createBodyStatement(packages, (functions) => {
 		return functions.map((func) => {
 			return `${func.name}: (${func.request.map((req) => `${req.name}: ${req.type}`).join(", ")}) => ipcRenderer.invoke("${func.name}", { ${func.request.map((req) => req.name).join(", ")} })`;
 		});
