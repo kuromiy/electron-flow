@@ -9,7 +9,7 @@ export const autoGenerateHandlers = {
     "ping": (ctx: Omit<Context, "event">) => {
         return async (event: IpcMainInvokeEvent, _: unknown) => {
             try {
-                const result = await ping({ ...ctx, event }, );
+                const result = await ping({ ...ctx, event });
                 return success(result);
             } catch (e) {
                 return failure(e);

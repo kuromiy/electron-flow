@@ -15,6 +15,19 @@ export function createImportStatement(
 	});
 }
 
+/**
+ * バリデーター名を生成する
+ * @param funcName 関数名
+ * @param pattern パターン文字列 ({funcName}, {FuncName} をサポート)
+ * @returns バリデーター名
+ */
+export function createValidatorName(funcName: string, pattern: string): string {
+	const pascalCase = funcName.charAt(0).toUpperCase() + funcName.slice(1);
+	return pattern
+		.replace("{funcName}", funcName)
+		.replace("{FuncName}", pascalCase);
+}
+
 export function createBodyStatement(
 	packages: PackageInfo[],
 	apply: (
