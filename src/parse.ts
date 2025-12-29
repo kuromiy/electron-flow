@@ -146,7 +146,18 @@ export function parseFile(
 					// オブジェクト型の場合はフィールドを展開
 					const properties = paramType.getProperties();
 					if (properties.length > 0) {
-						for (const prop of properties) {
+						// プロパティをソースコード上の宣言位置でソート
+						const sortedProperties = [...properties].sort((a, b) => {
+							const aDecl = a.valueDeclaration ?? a.declarations?.[0];
+							const bDecl = b.valueDeclaration ?? b.declarations?.[0];
+							if (!aDecl || !bDecl) return 0;
+							// 同じファイル内の場合は位置でソート
+							if (aDecl.getSourceFile() === bDecl.getSourceFile()) {
+								return aDecl.getStart() - bDecl.getStart();
+							}
+							return 0;
+						});
+						for (const prop of sortedProperties) {
 							const propDecl = prop.valueDeclaration ?? prop.declarations?.[0];
 							if (!propDecl) continue;
 

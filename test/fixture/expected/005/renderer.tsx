@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            execute: (page: number, limit: number, sortKey: "createdAt" | "updatedAt" | "serviceName", sortOrder: "asc" | "desc", searchQuery: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof execute>, unknown>>;
+            execute: (page: number, limit: number, searchQuery: string | undefined, sortKey: "createdAt" | "updatedAt" | "serviceName", sortOrder: "asc" | "desc") => Promise<Result<ReturnTypeUnwrapped<typeof execute>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    execute: (page: number, limit: number, sortKey: "createdAt" | "updatedAt" | "serviceName", sortOrder: "asc" | "desc", searchQuery: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof execute>, unknown>>;
+    execute: (page: number, limit: number, searchQuery: string | undefined, sortKey: "createdAt" | "updatedAt" | "serviceName", sortOrder: "asc" | "desc") => Promise<Result<ReturnTypeUnwrapped<typeof execute>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async execute(page: number, limit: number, sortKey: "createdAt" | "updatedAt" | "serviceName", sortOrder: "asc" | "desc", searchQuery: string | undefined) {
-        return window.api.execute(page, limit, sortKey, sortOrder, searchQuery);
+    async execute(page: number, limit: number, searchQuery: string | undefined, sortKey: "createdAt" | "updatedAt" | "serviceName", sortOrder: "asc" | "desc") {
+        return window.api.execute(page, limit, searchQuery, sortKey, sortOrder);
     }
 }
