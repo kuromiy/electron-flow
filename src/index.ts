@@ -2,7 +2,7 @@ import { existsSync, statSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { formatPreload } from "./format/preload.js";
-import { formatRegister } from "./format/register.js";
+import { formatRegister, type ValidatorConfig } from "./format/register.js";
 import { formatRendererIF } from "./format/renderer.js";
 import { logger } from "./logger.js";
 import { parseFile } from "./parse.js";
@@ -38,7 +38,12 @@ type AutoCodeOption = {
 	};
 	/** Result型をアンラップして例外ベースのAPIに変換するか（デフォルト: false） */
 	unwrapResults?: boolean;
+	/** バリデーター設定（オプション） */
+	validatorConfig?: ValidatorConfig;
 };
+
+// ValidatorConfig型を再エクスポート
+export type { ValidatorConfig };
 
 export async function build({
 	targetDirPath,
@@ -49,6 +54,7 @@ export async function build({
 	contextPath,
 	customErrorHandler,
 	unwrapResults = false,
+	validatorConfig,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -65,7 +71,7 @@ export async function build({
 	}
 
 	// parseFileでインポートされたファイルも収集
-	const { packages } = parseFile(ignores, files);
+	const { packages } = parseFile(ignores, files, [], validatorConfig?.pattern);
 
 	const totalFunctions = packages.reduce(
 		(sum, pkg) => sum + pkg.func.length,
@@ -89,6 +95,7 @@ export async function build({
 		dirname(registerPath),
 		contextPath,
 		customErrorHandler,
+		validatorConfig,
 	);
 	const rendererText = formatRendererIF(
 		sortedPackages,
@@ -123,6 +130,7 @@ export async function watchBuild({
 	contextPath,
 	customErrorHandler,
 	unwrapResults = false,
+	validatorConfig,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -138,6 +146,7 @@ export async function watchBuild({
 		contextPath,
 		...(customErrorHandler && { customErrorHandler }),
 		unwrapResults,
+		...(validatorConfig && { validatorConfig }),
 	});
 
 	// ファイル監視
@@ -176,6 +185,7 @@ export async function watchBuild({
 				dirname(registerPath),
 				contextPath,
 				customErrorHandler,
+				validatorConfig,
 			);
 			const rendererText = formatRendererIF(
 				sortedPackages,
@@ -210,7 +220,12 @@ export async function watchBuild({
 		sortedPackages = sortedPackages.filter((file) => file.path !== fullPath);
 
 		// parseFileで解析
-		const parseResult = parseFile(ignores, [fullPath], sortedPackages);
+		const parseResult = parseFile(
+			ignores,
+			[fullPath],
+			sortedPackages,
+			validatorConfig?.pattern,
+		);
 		sortedPackages = parseResult.packages;
 
 		sortedPackages.sort((a, b) => a.path.localeCompare(b.path));
@@ -224,6 +239,7 @@ export async function watchBuild({
 			dirname(registerPath),
 			contextPath,
 			customErrorHandler,
+			validatorConfig,
 		);
 		const rendererText = formatRendererIF(
 			sortedPackages,

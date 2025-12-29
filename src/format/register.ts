@@ -1,6 +1,6 @@
 import { relative } from "node:path";
 import type { PackageInfo } from "../parse.js";
-import { createImportStatement, createValidatorName } from "./utils.js";
+import { createImportStatement } from "./utils.js";
 
 export interface ValidatorConfig {
 	/**
@@ -20,30 +20,16 @@ export function formatRegister(
 		path: string;
 		functionName: string;
 	},
-	validatorConfig?: ValidatorConfig,
+	_validatorConfig?: ValidatorConfig,
 ) {
-	const useValidator = validatorConfig !== undefined;
-	const validatorPattern = validatorConfig?.pattern ?? "{funcName}Validator";
-
-	// バリデーターが必要な関数（requestがある関数）のバリデーター名を収集
-	const validatorsByPkg = useValidator
-		? packageInfos.map((pkg) => ({
-				pkg,
-				validators: pkg.func
-					.filter((func) => func.request.length > 0)
-					.map((func) => createValidatorName(func.name, validatorPattern)),
-			}))
-		: [];
-
 	const importStatements = createImportStatement(
 		outputPath,
 		packageInfos,
-		(functionNames, importPath) => {
-			// 対応するパッケージのバリデーター名を取得
-			const pkgValidators = validatorsByPkg.find(
-				(v) => v.pkg.func.map((f) => f.name).join(", ") === functionNames,
-			);
-			const validatorNames = pkgValidators?.validators ?? [];
+		(functionNames, importPath, pkg) => {
+			// バリデーター名を収集（validatorNameが設定されている関数のみ）
+			const validatorNames = pkg.func
+				.filter((func) => func.validatorName)
+				.map((func) => func.validatorName as string);
 			const allImports =
 				validatorNames.length > 0
 					? `${functionNames}, ${validatorNames.join(", ")}`
@@ -59,18 +45,19 @@ export function formatRegister(
 	const handlerStatements = packageInfos.flatMap((pkg) => {
 		return pkg.func.map((func) => {
 			const hasArgs = func.request.length > 0;
+			const hasValidator = func.validatorName !== undefined;
 			const argsParam = hasArgs
-				? useValidator
+				? hasValidator
 					? "args: unknown"
 					: "args: any"
 				: "_: unknown";
 
-			if (hasArgs && useValidator) {
-				const validatorName = createValidatorName(func.name, validatorPattern);
+			// バリデーター関数がある場合のみバリデーションコードを生成
+			if (hasArgs && hasValidator) {
 				return `"${func.name}": (ctx: Omit<Context, "event">) => {
         return async (event: IpcMainInvokeEvent, ${argsParam}) => {
             try {
-                const validatedArgs = ${validatorName} ? ${validatorName}(args) : args;
+                const validatedArgs = ${func.validatorName}(args);
                 const result = await ${func.name}({ ...ctx, event }, validatedArgs);
                 return success(result);
             } catch (e) {

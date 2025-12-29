@@ -4,14 +4,18 @@ import type { PackageInfo } from "../parse.js";
 export function createImportStatement(
 	outputPath: string,
 	packages: PackageInfo[],
-	apply: (functionNames: string, importPath: string) => string,
+	apply: (
+		functionNames: string,
+		importPath: string,
+		pkg: PackageInfo,
+	) => string,
 ) {
 	return packages.map((pkg) => {
 		const functionNames = pkg.func.map((func) => func.name).join(", ");
 		const importPath = relative(outputPath, pkg.path)
 			.replace(/\/|\\/g, "/")
 			.replace(/\.[^/.]+$/, "");
-		return apply(functionNames, importPath);
+		return apply(functionNames, importPath, pkg);
 	});
 }
 
