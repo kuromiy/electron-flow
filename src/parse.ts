@@ -42,7 +42,32 @@ export function parseFile(
 		return { fileName, funcName };
 	});
 	const importedFiles = new Set<string>();
-	const program = ts.createProgram(paths, {});
+
+	// 入力ファイルのディレクトリからtsconfig.jsonを探す
+	let compilerOptions: ts.CompilerOptions = {};
+	if (paths.length > 0) {
+		const firstFilePath = paths[0];
+		if (firstFilePath) {
+			const configPath = ts.findConfigFile(
+				dirname(firstFilePath),
+				ts.sys.fileExists,
+				"tsconfig.json",
+			);
+			if (configPath) {
+				const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
+				if (configFile.config) {
+					const parsedConfig = ts.parseJsonConfigFileContent(
+						configFile.config,
+						ts.sys,
+						dirname(configPath),
+					);
+					compilerOptions = parsedConfig.options;
+				}
+			}
+		}
+	}
+
+	const program = ts.createProgram(paths, compilerOptions);
 	const checker = program.getTypeChecker();
 
 	for (const path of paths) {
