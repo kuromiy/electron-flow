@@ -1,10 +1,8 @@
 import type { PackageInfo } from "../parse.js";
-import type { ZodObjectInfo } from "../zod.js";
 import { createImportStatement } from "./utils.js";
 
 export function formatRendererIF(
 	packages: PackageInfo[],
-	zodObjectInfos: ZodObjectInfo[],
 	outputPath: string,
 	unwrapResults = false,
 ) {
@@ -17,24 +15,8 @@ export function formatRendererIF(
 	);
 
 	const functions = packages.flatMap((pkg) => {
-		return pkg.func.flatMap((func) => {
-			const requests = func.request.reduce(
-				(prev, curr) => {
-					const foundRel = pkg.relations.find((r) => r.dist === curr.type);
-					if (foundRel) {
-						const found = zodObjectInfos.find((z) => z.name === foundRel.src);
-						if (found) {
-							const temp = found.fields.map((field) => {
-								return { name: field.name, type: field.type };
-							});
-							return prev.concat(temp);
-						}
-					}
-					return prev.concat({ name: curr.name, type: curr.type });
-				},
-				[] as { name: string; type: string }[],
-			);
-			return { name: func.name, request: requests };
+		return pkg.func.map((func) => {
+			return { name: func.name, request: func.request };
 		});
 	});
 

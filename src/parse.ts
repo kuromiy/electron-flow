@@ -1,13 +1,6 @@
 import { basename, dirname, extname, resolve } from "node:path";
 import * as ts from "typescript";
 
-type ZodObjectRelationRequest = {
-	// z.infer<typeof xxxx>のxxxx
-	src: string;
-	// z.inferで生成される型名
-	dist: string;
-};
-
 type RequestInfo = {
 	name: string;
 	type: string;
@@ -21,7 +14,6 @@ type FuncInfo = {
 export type PackageInfo = {
 	path: string;
 	func: FuncInfo[];
-	relations: ZodObjectRelationRequest[];
 };
 
 /**
@@ -81,44 +73,9 @@ export function parseFile(
 				}
 			}
 
-			// リクエストの型解析
-			// 下記のようなコードを想定
-			// export type XxxRequest = z.infer<typeof xxxSchema>;
-			// compiler apiだと上記コードのようなz.inferで定義された型情報を正確に取得できない。
-			// なので、別で解析したZodObjectInfoと照らし合わせて解析するためにリクエストの関係を保存する
-			if (ts.isTypeAliasDeclaration(node) && node.name) {
-				node.forEachChild((child) => {
-					if (ts.isTypeReferenceNode(child)) {
-						child.forEachChild((c) => {
-							if (ts.isTypeQueryNode(c)) {
-								c.forEachChild((cc) => {
-									if (ts.isIdentifier(cc)) {
-										const pkg = packages.find((p) => p.path === path);
-										if (pkg) {
-											pkg.relations.push({
-												src: cc.getText(),
-												dist: node.name.getText(),
-											});
-										} else {
-											packages.push({
-												path,
-												func: [],
-												relations: [
-													{ src: cc.getText(), dist: node.name.getText() },
-												],
-											});
-										}
-									}
-								});
-							}
-						});
-					}
-				});
-			}
-
 			// APIの解析
 			// 下記のようなコードを想定
-			// export async function xxx(ctx: Context, xxx: xxx) {}
+			// export async function xxx(ctx: Context, req: SomeRequest) {}
 			// exportされているかつ第一引数がContextの関数を対象に解析
 			if (ts.isFunctionDeclaration(node) && node.name) {
 				// exportされている関数のみ解析
@@ -149,29 +106,59 @@ export function parseFile(
 				// 除外関数の場合はスキップ
 				if (ignoreFuncName.includes(node.name.getText())) return;
 
-				// パラメータの解析
-				const params = [] as { name: string; type: string }[];
-				signatures.forEach((signature) => {
-					signature.parameters.forEach((param) => {
-						// 一時変数に変数名→型の順で追加
-						const temp = [] as string[];
-						param.declarations?.forEach((declaration) => {
-							declaration.forEachChild((child) => {
-								temp.push(child.getText());
+				// 第2引数以降のパラメータを解析
+				// Type Checkerを使って型を直接展開する
+				const params: RequestInfo[] = [];
+				for (let i = 1; i < signature.parameters.length; i++) {
+					const param = signature.parameters[i];
+					if (!param) continue;
+
+					const paramDecl = param.valueDeclaration;
+					if (!paramDecl) continue;
+
+					const paramType = checker.getTypeOfSymbolAtLocation(param, paramDecl);
+
+					// オブジェクト型の場合はフィールドを展開
+					const properties = paramType.getProperties();
+					if (properties.length > 0) {
+						for (const prop of properties) {
+							const propDecl = prop.valueDeclaration ?? prop.declarations?.[0];
+							if (!propDecl) continue;
+
+							const propType = checker.getTypeOfSymbolAtLocation(
+								prop,
+								propDecl,
+							);
+							let propTypeString = checker.typeToString(
+								propType,
+								undefined,
+								ts.TypeFormatFlags.NoTruncation,
+							);
+
+							// オプショナルプロパティの場合は | undefined を追加
+							const isOptional = (prop.flags & ts.SymbolFlags.Optional) !== 0;
+							if (isOptional && !propTypeString.includes("undefined")) {
+								propTypeString = `${propTypeString} | undefined`;
+							}
+
+							params.push({
+								name: prop.name,
+								type: propTypeString,
 							});
-						});
-						// ここで変数と型のペアに変換
-						for (let i = 0; i < temp.length; i += 2) {
-							const name = temp[i];
-							const type = temp[i + 1];
-							// 値が存在しない場合はスキップ
-							if (!name || !type) continue;
-							// Contextは除外、ここで除外すべきかは要検討
-							if (type === "Context") continue;
-							params.push({ name, type });
 						}
-					});
-				});
+					} else {
+						// プリミティブ型などの場合はそのまま追加
+						const paramTypeString = checker.typeToString(
+							paramType,
+							undefined,
+							ts.TypeFormatFlags.NoTruncation,
+						);
+						params.push({
+							name: param.name,
+							type: paramTypeString,
+						});
+					}
+				}
 
 				const pkg = packages.find((p) => p.path === path);
 				if (pkg) {
@@ -180,7 +167,6 @@ export function parseFile(
 					packages.push({
 						path,
 						func: [{ name: node.name.getText(), request: params }],
-						relations: [],
 					});
 				}
 			}
