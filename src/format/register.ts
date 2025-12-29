@@ -57,7 +57,7 @@ export function formatRegister(
 				return `"${func.name}": (ctx: Omit<Context, "event">) => {
         return async (event: IpcMainInvokeEvent, ${argsParam}) => {
             try {
-                const validatedArgs = ${func.validatorName}(args);
+                const validatedArgs = ${func.validatorName}({ ...ctx, event }, args);
                 const result = await ${func.name}({ ...ctx, event }, validatedArgs);
                 return success(result);
             } catch (e) {
