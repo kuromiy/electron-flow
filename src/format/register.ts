@@ -2,6 +2,16 @@ import { relative } from "node:path";
 import type { PackageInfo } from "../parse.js";
 import { createImportStatement } from "./utils.js";
 
+export interface ValidatorConfig {
+	/**
+	 * バリデーター名のパターン
+	 * {funcName} - 関数名そのまま (registerAuthor)
+	 * {FuncName} - PascalCase (RegisterAuthor)
+	 * @default "{funcName}Validator"
+	 */
+	pattern?: string;
+}
+
 export function formatRegister(
 	packageInfos: PackageInfo[],
 	outputPath: string,
@@ -10,12 +20,21 @@ export function formatRegister(
 		path: string;
 		functionName: string;
 	},
+	_validatorConfig?: ValidatorConfig,
 ) {
 	const importStatements = createImportStatement(
 		outputPath,
 		packageInfos,
-		(functionNames, importPath) => {
-			return `import { ${functionNames} } from "${importPath}.js";`;
+		(functionNames, importPath, pkg) => {
+			// バリデーター名を収集（validatorNameが設定されている関数のみ）
+			const validatorNames = pkg.func
+				.filter((func) => func.validatorName)
+				.map((func) => func.validatorName as string);
+			const allImports =
+				validatorNames.length > 0
+					? `${functionNames}, ${validatorNames.join(", ")}`
+					: functionNames;
+			return `import { ${allImports} } from "${importPath}.js";`;
 		},
 	);
 
@@ -25,11 +44,44 @@ export function formatRegister(
 
 	const handlerStatements = packageInfos.flatMap((pkg) => {
 		return pkg.func.map((func) => {
-			const argsParam = func.request.length > 0 ? "args: any" : "_: unknown";
+			const hasArgs = func.request.length > 0;
+			const hasValidator = func.validatorName !== undefined;
+			const argsParam = hasArgs
+				? hasValidator
+					? "args: unknown"
+					: "args: any"
+				: "_: unknown";
+
+			// バリデーター関数がある場合のみバリデーションコードを生成
+			if (hasArgs && hasValidator) {
+				return `"${func.name}": (ctx: Omit<Context, "event">) => {
+        return async (event: IpcMainInvokeEvent, ${argsParam}) => {
+            try {
+                const validatedArgs = ${func.validatorName}(args, { ...ctx, event });
+                const result = await ${func.name}({ ...ctx, event }, validatedArgs);
+                return success(result);
+            } catch (e) {
+                ${errorHandlerCode}
+            }
+        };
+    },`;
+			}
+			if (hasArgs) {
+				return `"${func.name}": (ctx: Omit<Context, "event">) => {
+        return async (event: IpcMainInvokeEvent, ${argsParam}) => {
+            try {
+                const result = await ${func.name}({ ...ctx, event }, args);
+                return success(result);
+            } catch (e) {
+                ${errorHandlerCode}
+            }
+        };
+    },`;
+			}
 			return `"${func.name}": (ctx: Omit<Context, "event">) => {
         return async (event: IpcMainInvokeEvent, ${argsParam}) => {
             try {
-                const result = await ${func.name}({ ...ctx, event }, ${func.request.length > 0 ? `args` : ``});
+                const result = await ${func.name}({ ...ctx, event });
                 return success(result);
             } catch (e) {
                 ${errorHandlerCode}

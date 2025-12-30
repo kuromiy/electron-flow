@@ -1,5 +1,6 @@
 import { basename, dirname, extname, resolve } from "node:path";
 import * as ts from "typescript";
+import { createValidatorName } from "./format/utils.js";
 
 type RequestInfo = {
 	name: string;
@@ -9,6 +10,8 @@ type RequestInfo = {
 type FuncInfo = {
 	name: string;
 	request: RequestInfo[];
+	/** バリデーター関数名（存在する場合のみ設定） */
+	validatorName?: string;
 };
 
 export type PackageInfo = {
@@ -36,6 +39,7 @@ export function parseFile(
 	ignores: string[],
 	paths: string[],
 	packages: PackageInfo[] = [],
+	validatorPattern?: string,
 ): { packages: PackageInfo[]; importedFiles: Set<string> } {
 	const ignoreInfo = ignores.map((ignore) => {
 		const [fileName, funcName] = ignore.split(".");
@@ -81,6 +85,20 @@ export function parseFile(
 		const ignoreFuncName = ignoreInfo
 			.filter((info) => info.fileName === fileWithOutExt)
 			.map((info) => info.funcName);
+
+		// 1パス目: エクスポートされた関数名を収集（バリデーター検出用）
+		const exportedFunctions = new Set<string>();
+		if (validatorPattern) {
+			ts.forEachChild(sourceFile, (node) => {
+				if (ts.isFunctionDeclaration(node) && node.name) {
+					const modifierFlags = ts.getCombinedModifierFlags(node);
+					const isExported = (modifierFlags & ts.ModifierFlags.Export) !== 0;
+					if (isExported) {
+						exportedFunctions.add(node.name.getText());
+					}
+				}
+			});
+		}
 
 		ts.forEachChild(sourceFile, (node) => {
 			// import文の解析
@@ -196,13 +214,32 @@ export function parseFile(
 					}
 				}
 
+				// バリデーター関数の存在を確認
+				const funcName = node.name.getText();
+				let validatorName: string | undefined;
+				if (validatorPattern) {
+					const expectedValidatorName = createValidatorName(
+						funcName,
+						validatorPattern,
+					);
+					if (exportedFunctions.has(expectedValidatorName)) {
+						validatorName = expectedValidatorName;
+					}
+				}
+
+				const funcInfo: FuncInfo = {
+					name: funcName,
+					request: params,
+					...(validatorName && { validatorName }),
+				};
+
 				const pkg = packages.find((p) => p.path === path);
 				if (pkg) {
-					pkg.func.push({ name: node.name.getText(), request: params });
+					pkg.func.push(funcInfo);
 				} else {
 					packages.push({
 						path,
-						func: [{ name: node.name.getText(), request: params }],
+						func: [funcInfo],
 					});
 				}
 			}

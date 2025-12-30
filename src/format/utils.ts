@@ -4,15 +4,32 @@ import type { PackageInfo } from "../parse.js";
 export function createImportStatement(
 	outputPath: string,
 	packages: PackageInfo[],
-	apply: (functionNames: string, importPath: string) => string,
+	apply: (
+		functionNames: string,
+		importPath: string,
+		pkg: PackageInfo,
+	) => string,
 ) {
 	return packages.map((pkg) => {
 		const functionNames = pkg.func.map((func) => func.name).join(", ");
 		const importPath = relative(outputPath, pkg.path)
 			.replace(/\/|\\/g, "/")
 			.replace(/\.[^/.]+$/, "");
-		return apply(functionNames, importPath);
+		return apply(functionNames, importPath, pkg);
 	});
+}
+
+/**
+ * バリデーター名を生成する
+ * @param funcName 関数名
+ * @param pattern パターン文字列 ({funcName}, {FuncName} をサポート)
+ * @returns バリデーター名
+ */
+export function createValidatorName(funcName: string, pattern: string): string {
+	const pascalCase = funcName.charAt(0).toUpperCase() + funcName.slice(1);
+	return pattern
+		.replaceAll("{funcName}", funcName)
+		.replaceAll("{FuncName}", pascalCase);
 }
 
 export function createBodyStatement(
