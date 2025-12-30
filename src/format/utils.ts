@@ -28,8 +28,8 @@ export function createImportStatement(
 export function createValidatorName(funcName: string, pattern: string): string {
 	const pascalCase = funcName.charAt(0).toUpperCase() + funcName.slice(1);
 	return pattern
-		.replace("{funcName}", funcName)
-		.replace("{FuncName}", pascalCase);
+		.replaceAll("{funcName}", funcName)
+		.replaceAll("{FuncName}", pascalCase);
 }
 
 export function createBodyStatement(
