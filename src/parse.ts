@@ -90,11 +90,25 @@ export function parseFile(
 		const exportedFunctions = new Set<string>();
 		if (validatorPattern) {
 			ts.forEachChild(sourceFile, (node) => {
+				// 関数宣言の場合
 				if (ts.isFunctionDeclaration(node) && node.name) {
 					const modifierFlags = ts.getCombinedModifierFlags(node);
 					const isExported = (modifierFlags & ts.ModifierFlags.Export) !== 0;
 					if (isExported) {
 						exportedFunctions.add(node.name.getText());
+					}
+				}
+				// 変数宣言の場合（export const validator = zodValidator(...) など）
+				if (ts.isVariableStatement(node)) {
+					const hasExportModifier = node.modifiers?.some(
+						(mod) => mod.kind === ts.SyntaxKind.ExportKeyword,
+					);
+					if (hasExportModifier) {
+						for (const declaration of node.declarationList.declarations) {
+							if (ts.isIdentifier(declaration.name)) {
+								exportedFunctions.add(declaration.name.getText());
+							}
+						}
 					}
 				}
 			});
