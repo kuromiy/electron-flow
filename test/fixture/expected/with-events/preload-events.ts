@@ -10,7 +10,7 @@ export default {
         };
         ipcRenderer.on("onError", handler);
         return () => {
-            ipcRenderer.removeListener("onError", handler);
+            ipcRenderer.off("onError", handler);
         };
     },
     onSuccess: (cb: (value: SuccessMessage) => void) => {
@@ -19,7 +19,7 @@ export default {
         };
         ipcRenderer.on("onSuccess", handler);
         return () => {
-            ipcRenderer.removeListener("onSuccess", handler);
+            ipcRenderer.off("onSuccess", handler);
         };
     }
 };
