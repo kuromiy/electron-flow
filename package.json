@@ -1,6 +1,6 @@
 {
 	"name": "electron-flow",
-	"version": "2.2.0",
+	"version": "2.3.0",
 	"description": "A simple utility library with helpful functions",
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -8,7 +8,7 @@
 		"build": "tsc",
 		"dev": "tsc --watch",
 		"postinstall": "npm run build",
-		"test": "tsx ./test/index.test.ts",
+		"test": "tsx ./test/index.test.ts && tsx ./test/events.test.ts",
 		"prepare": "husky",
 		"lint": "npx @biomejs/biome check",
 		"check": "tsc --noEmit -p tsconfig.test.json"
