@@ -1,11 +1,14 @@
 import { existsSync, statSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { formatEventSender } from "./format/event-sender.js";
 import { formatPreload } from "./format/preload.js";
+import { formatPreloadEvents } from "./format/preload-events.js";
 import { formatRegister, type ValidatorConfig } from "./format/register.js";
 import { formatRendererIF } from "./format/renderer.js";
+import { formatRendererEvents } from "./format/renderer-events.js";
 import { logger } from "./logger.js";
-import { parseFile } from "./parse.js";
+import { parseEventFile, parseFile } from "./parse.js";
 import { readFilePaths } from "./utils.js";
 
 // ロガー設定関数をエクスポート
@@ -40,6 +43,14 @@ type AutoCodeOption = {
 	unwrapResults?: boolean;
 	/** バリデーター設定（オプション） */
 	validatorConfig?: ValidatorConfig;
+	/** イベント定義用ディレクトリパス（オプション） */
+	eventDirPath?: string;
+	/** イベント用プリロードコードの出力先パス（オプション） */
+	preloadEventsPath?: string;
+	/** EventSender用コードの出力先パス（オプション） */
+	eventSenderPath?: string;
+	/** イベント用レンダラーコードの出力先パス（オプション） */
+	rendererEventsPath?: string;
 };
 
 // ValidatorConfig型を再エクスポート
@@ -55,6 +66,10 @@ export async function build({
 	customErrorHandler,
 	unwrapResults = false,
 	validatorConfig,
+	eventDirPath,
+	preloadEventsPath,
+	eventSenderPath,
+	rendererEventsPath,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -67,7 +82,7 @@ export async function build({
 	// ファイルが0個の場合は後続の処理をスキップして空の結果を返す
 	if (files.length === 0) {
 		logger.info("No files found in targetDirPath, skipping build");
-		return { sortedPackages: [] };
+		return { sortedPackages: [], sortedEventPackages: [] };
 	}
 
 	// parseFileでインポートされたファイルも収集
@@ -116,9 +131,70 @@ export async function build({
 	await writeFile(rendererPath, rendererText);
 	logger.debug(`Wrote renderer to: ${rendererPath}`);
 
+	// イベント関連ファイルの生成
+	let sortedEventPackages: ReturnType<typeof parseEventFile>["packages"] = [];
+	if (
+		eventDirPath &&
+		preloadEventsPath &&
+		eventSenderPath &&
+		rendererEventsPath
+	) {
+		if (existsSync(eventDirPath)) {
+			const eventFiles = await readFilePaths(eventDirPath);
+			logger.info(`Found ${eventFiles.length} event files to process`);
+			logger.debugObject("Event file list:", eventFiles);
+
+			if (eventFiles.length > 0) {
+				const { packages: eventPackages } = parseEventFile(eventFiles);
+
+				const totalEvents = eventPackages.reduce(
+					(sum, pkg) => sum + pkg.events.length,
+					0,
+				);
+				logger.info(
+					`Parsed ${eventPackages.length} event packages with ${totalEvents} events`,
+				);
+				logger.debugObject("Event packages detail:", eventPackages);
+
+				sortedEventPackages = eventPackages
+					.toSorted((a, b) => a.path.localeCompare(b.path))
+					.map((pkg) => ({
+						...pkg,
+						events: pkg.events.toSorted((a, b) => a.name.localeCompare(b.name)),
+					}));
+			}
+
+			const preloadEventsText = formatPreloadEvents(
+				sortedEventPackages,
+				dirname(preloadEventsPath),
+			);
+			const eventSenderText = formatEventSender(
+				sortedEventPackages,
+				dirname(eventSenderPath),
+			);
+			const rendererEventsText = formatRendererEvents(
+				sortedEventPackages,
+				dirname(rendererEventsPath),
+			);
+
+			await mkdir(dirname(preloadEventsPath), { recursive: true });
+			await mkdir(dirname(eventSenderPath), { recursive: true });
+			await mkdir(dirname(rendererEventsPath), { recursive: true });
+
+			await writeFile(preloadEventsPath, preloadEventsText);
+			logger.debug(`Wrote preload-events to: ${preloadEventsPath}`);
+			await writeFile(eventSenderPath, eventSenderText);
+			logger.debug(`Wrote event-sender to: ${eventSenderPath}`);
+			await writeFile(rendererEventsPath, rendererEventsText);
+			logger.debug(`Wrote renderer-events to: ${rendererEventsPath}`);
+		} else {
+			logger.warn(`Event directory does not exist: ${eventDirPath}`);
+		}
+	}
+
 	logger.info("Build completed successfully.");
 
-	return { sortedPackages };
+	return { sortedPackages, sortedEventPackages };
 }
 
 export async function watchBuild({
