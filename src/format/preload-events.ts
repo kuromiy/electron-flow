@@ -29,7 +29,7 @@ export function formatPreloadEvents(
         };
         ipcRenderer.on("${event.name}", handler);
         return () => {
-            ipcRenderer.removeListener("${event.name}", handler);
+            ipcRenderer.off("${event.name}", handler);
         };
     }`;
 		});
