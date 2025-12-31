@@ -17,7 +17,11 @@ export function formatEventSender(
 		const importPath = relative(outputPath, pkg.path)
 			.replace(/\/|\\/g, "/")
 			.replace(/\.[^/.]+$/, "");
-		return `import type { ${typeNames} } from "${importPath}.js";`;
+		// 相対パスが..で始まらない場合は./を追加
+		const finalPath = importPath.startsWith(".")
+			? importPath
+			: `./${importPath}`;
+		return `import type { ${typeNames} } from "${finalPath}.js";`;
 	});
 
 	// EventSenderのメソッドを生成
