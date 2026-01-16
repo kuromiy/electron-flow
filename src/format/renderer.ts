@@ -87,7 +87,9 @@ export function formatRendererIF(
 
 	const resultImport = hasFunctions
 		? unwrapResults
-			? 'import { isFailure, type Result } from "electron-flow/result";'
+			? customErrorHandler
+				? 'import { isFailure, type Result, type Failure } from "electron-flow/result";'
+				: 'import { isFailure, type Result } from "electron-flow/result";'
 			: customErrorHandler
 				? 'import type { Result, Failure } from "electron-flow";'
 				: 'import type { Result } from "electron-flow";'
