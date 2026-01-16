@@ -116,6 +116,7 @@ export async function build({
 		sortedPackages,
 		dirname(rendererPath),
 		unwrapResults,
+		customErrorHandler,
 	);
 
 	logger.info("Creating output directories...");
@@ -267,6 +268,7 @@ export async function watchBuild({
 				sortedPackages,
 				dirname(rendererPath),
 				unwrapResults,
+				customErrorHandler,
 			);
 
 			// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
@@ -321,6 +323,7 @@ export async function watchBuild({
 			sortedPackages,
 			dirname(rendererPath),
 			unwrapResults,
+			customErrorHandler,
 		);
 
 		// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
