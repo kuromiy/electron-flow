@@ -1,9 +1,9 @@
 // auto generated
-import type { Context } from "../../fixture/input/context.js";
-import { ipcMain, type IpcMainInvokeEvent } from "electron";
+import type { Context } from "../../../fixture/input/context.js";
+import type { IpcMainInvokeEvent } from "electron";
 import { success, failure } from "electron-flow";
 
-import { createUser, updateUser } from "../../fixture/input/apis-with-external-schema/user-api.js";
+import { createUser, updateUser } from "../../../fixture/input/apis-with-external-schema/user-api.js";
 
 export const autoGenerateHandlers = {
     "createUser": (ctx: Omit<Context, "event">) => {
@@ -27,15 +27,3 @@ export const autoGenerateHandlers = {
         };
     },
 };
-
-export function registerAutoGenerateAPI(ctx: Omit<Context, "event">) {
-    Object.entries(autoGenerateHandlers).forEach(([key, value]) => {
-        ipcMain.handle(key, value(ctx));
-    });
-}
-
-export function removeAutoGenerateAPI() {
-    Object.keys(autoGenerateHandlers).forEach(key => {
-        ipcMain.removeHandler(key);
-    });
-}

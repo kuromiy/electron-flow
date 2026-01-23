@@ -9,7 +9,7 @@ describe("Electron IPC自動生成 electronモジュールインポート時エ�
 			targetDirPath: "./test/fixture/input/with-electron",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/with-electron/register.ts",
+			registerPath: "./test/output/with-electron/register",
 			preloadPath: "./test/output/with-electron/preload.ts",
 			rendererPath: "./test/output/with-electron/renderer.tsx",
 		};
@@ -20,8 +20,12 @@ describe("Electron IPC自動生成 electronモジュールインポート時エ�
 
 		// 検証
 		await assertFileContent(
-			"./test/output/with-electron/register.ts",
-			"./test/fixture/expected/with-electron/register.ts",
+			"./test/output/with-electron/register/handlers.ts",
+			"./test/fixture/expected/with-electron/register/handlers.ts",
+		);
+		await assertFileContent(
+			"./test/output/with-electron/register/api.ts",
+			"./test/fixture/expected/with-electron/register/api.ts",
 		);
 		await assertFileContent(
 			"./test/output/with-electron/preload.ts",

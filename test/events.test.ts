@@ -9,7 +9,7 @@ describe("Electron IPC イベント自動生成", () => {
 			targetDirPath: "./test/fixture/input/apis1",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/with-events/register.ts",
+			registerPath: "./test/output/with-events/register",
 			preloadPath: "./test/output/with-events/preload.ts",
 			rendererPath: "./test/output/with-events/renderer.tsx",
 			eventDirPath: "./test/fixture/input/events",

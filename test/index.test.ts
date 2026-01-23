@@ -9,7 +9,7 @@ describe("Electron IPC自動生成", () => {
 			targetDirPath: "./test/fixture/input/apis1",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/001/register.ts",
+			registerPath: "./test/output/001/register",
 			preloadPath: "./test/output/001/preload.ts",
 			rendererPath: "./test/output/001/renderer.tsx",
 		};
@@ -20,8 +20,12 @@ describe("Electron IPC自動生成", () => {
 
 		// 検証
 		await assertFileContent(
-			"./test/output/001/register.ts",
-			"./test/fixture/expected/001/register.ts",
+			"./test/output/001/register/handlers.ts",
+			"./test/fixture/expected/001/register/handlers.ts",
+		);
+		await assertFileContent(
+			"./test/output/001/register/api.ts",
+			"./test/fixture/expected/001/register/api.ts",
 		);
 		await assertFileContent(
 			"./test/output/001/preload.ts",
@@ -39,7 +43,7 @@ describe("Electron IPC自動生成", () => {
 			targetDirPath: "./test/fixture/input/apis2",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/002/register.ts",
+			registerPath: "./test/output/002/register",
 			preloadPath: "./test/output/002/preload.ts",
 			rendererPath: "./test/output/002/renderer.tsx",
 		};
@@ -50,8 +54,12 @@ describe("Electron IPC自動生成", () => {
 
 		// 検証
 		await assertFileContent(
-			"./test/output/002/register.ts",
-			"./test/fixture/expected/002/register.ts",
+			"./test/output/002/register/handlers.ts",
+			"./test/fixture/expected/002/register/handlers.ts",
+		);
+		await assertFileContent(
+			"./test/output/002/register/api.ts",
+			"./test/fixture/expected/002/register/api.ts",
 		);
 		await assertFileContent(
 			"./test/output/002/preload.ts",
@@ -69,7 +77,7 @@ describe("Electron IPC自動生成", () => {
 			targetDirPath: "./test/fixture/input/apis1",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/003/register.ts",
+			registerPath: "./test/output/003/register",
 			preloadPath: "./test/output/003/preload.ts",
 			rendererPath: "./test/output/003/renderer.tsx",
 			unwrapResults: true,
@@ -81,8 +89,12 @@ describe("Electron IPC自動生成", () => {
 
 		// 検証
 		await assertFileContent(
-			"./test/output/003/register.ts",
-			"./test/fixture/expected/003/register.ts",
+			"./test/output/003/register/handlers.ts",
+			"./test/fixture/expected/003/register/handlers.ts",
+		);
+		await assertFileContent(
+			"./test/output/003/register/api.ts",
+			"./test/fixture/expected/003/register/api.ts",
 		);
 		await assertFileContent(
 			"./test/output/003/preload.ts",
@@ -100,7 +112,7 @@ describe("Electron IPC自動生成", () => {
 			targetDirPath: "./test/fixture/input/apis-with-external-schema",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/004/register.ts",
+			registerPath: "./test/output/004/register",
 			preloadPath: "./test/output/004/preload.ts",
 			rendererPath: "./test/output/004/renderer.tsx",
 		};
@@ -111,8 +123,12 @@ describe("Electron IPC自動生成", () => {
 
 		// 検証
 		await assertFileContent(
-			"./test/output/004/register.ts",
-			"./test/fixture/expected/004/register.ts",
+			"./test/output/004/register/handlers.ts",
+			"./test/fixture/expected/004/register/handlers.ts",
+		);
+		await assertFileContent(
+			"./test/output/004/register/api.ts",
+			"./test/fixture/expected/004/register/api.ts",
 		);
 		await assertFileContent(
 			"./test/output/004/preload.ts",
@@ -130,7 +146,7 @@ describe("Electron IPC自動生成", () => {
 			targetDirPath: "./test/fixture/input/apis3",
 			contextPath: "./test/fixture/input/context.ts",
 			ignores: [],
-			registerPath: "./test/output/005/register.ts",
+			registerPath: "./test/output/005/register",
 			preloadPath: "./test/output/005/preload.ts",
 			rendererPath: "./test/output/005/renderer.tsx",
 		};
@@ -141,8 +157,12 @@ describe("Electron IPC自動生成", () => {
 
 		// 検証
 		await assertFileContent(
-			"./test/output/005/register.ts",
-			"./test/fixture/expected/005/register.ts",
+			"./test/output/005/register/handlers.ts",
+			"./test/fixture/expected/005/register/handlers.ts",
+		);
+		await assertFileContent(
+			"./test/output/005/register/api.ts",
+			"./test/fixture/expected/005/register/api.ts",
 		);
 		await assertFileContent(
 			"./test/output/005/preload.ts",
