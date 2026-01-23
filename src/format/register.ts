@@ -12,7 +12,7 @@ export interface ValidatorConfig {
 	pattern?: string;
 }
 
-export function formatRegister(
+export function formatHandlers(
 	packageInfos: PackageInfo[],
 	outputPath: string,
 	contextPath: string,
@@ -123,9 +123,25 @@ export function formatRegister(
 			? '\nimport { success, failure } from "electron-flow";'
 			: "";
 
-	const ipcMainImports = hasHandlers
-		? 'import { ipcMain, type IpcMainInvokeEvent } from "electron";'
-		: 'import { ipcMain } from "electron";';
+	const text = `// auto generated
+import type { Context } from "${contextImportPath}.js";
+import type { IpcMainInvokeEvent } from "electron";${electronFlowImports}${customErrorImport}
+${importsSection}
+export const autoGenerateHandlers = ${handlersContent};
+`;
+	return text;
+}
+
+export function formatRegisterAPI(
+	packageInfos: PackageInfo[],
+	outputPath: string,
+	contextPath: string,
+) {
+	const contextImportPath = relative(outputPath, contextPath)
+		.replace(/\/|\\/g, "/")
+		.replace(/\.[^/.]+$/, "");
+
+	const hasHandlers = packageInfos.some((pkg) => pkg.func.length > 0);
 
 	// ハンドラーがある場合とない場合で異なる実装を生成
 	const registerFunction = hasHandlers
@@ -134,7 +150,7 @@ export function formatRegister(
         ipcMain.handle(key, value(ctx));
     });
 }`
-		: `export function registerAutoGenerateAPI(ctx: Omit<Context, "event">) {
+		: `export function registerAutoGenerateAPI(_ctx: Omit<Context, "event">) {
     // No handlers to register
 }`;
 
@@ -148,11 +164,18 @@ export function formatRegister(
     // No handlers to remove
 }`;
 
+	const handlersImport = hasHandlers
+		? 'import { autoGenerateHandlers } from "./handlers.js";'
+		: "";
+
+	const ipcMainImport = hasHandlers
+		? 'import { ipcMain } from "electron";'
+		: "";
+
 	const text = `// auto generated
 import type { Context } from "${contextImportPath}.js";
-${ipcMainImports}${electronFlowImports}${customErrorImport}
-${importsSection}
-export const autoGenerateHandlers = ${handlersContent};
+${ipcMainImport}
+${handlersImport}
 
 ${registerFunction}
 

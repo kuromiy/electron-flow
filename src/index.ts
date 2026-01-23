@@ -4,7 +4,11 @@ import { dirname, join } from "node:path";
 import { formatEventSender } from "./format/event-sender.js";
 import { formatPreload } from "./format/preload.js";
 import { formatPreloadEvents } from "./format/preload-events.js";
-import { formatRegister, type ValidatorConfig } from "./format/register.js";
+import {
+	formatHandlers,
+	formatRegisterAPI,
+	type ValidatorConfig,
+} from "./format/register.js";
 import { formatRendererIF } from "./format/renderer.js";
 import { formatRendererEvents } from "./format/renderer-events.js";
 import { logger } from "./logger.js";
@@ -26,7 +30,7 @@ type AutoCodeOption = {
 	ignores: string[];
 	/** プリロード用コードの出力先パス */
 	preloadPath: string;
-	/** レジスター用コードの出力先パス */
+	/** レジスター用コードの出力先ディレクトリ（handlers.tsとapi.tsが出力される） */
 	registerPath: string;
 	/** レンダラー用インターフェースコードの出力先パス */
 	rendererPath: string;
@@ -105,12 +109,17 @@ export async function build({
 		}));
 
 	const preloadText = formatPreload(sortedPackages);
-	const registerText = formatRegister(
+	const handlersText = formatHandlers(
 		sortedPackages,
-		dirname(registerPath),
+		registerPath,
 		contextPath,
 		customErrorHandler,
 		validatorConfig,
+	);
+	const registerAPIText = formatRegisterAPI(
+		sortedPackages,
+		registerPath,
+		contextPath,
 	);
 	const rendererText = formatRendererIF(
 		sortedPackages,
@@ -121,14 +130,18 @@ export async function build({
 
 	logger.info("Creating output directories...");
 	await mkdir(dirname(preloadPath), { recursive: true });
-	await mkdir(dirname(registerPath), { recursive: true });
+	await mkdir(registerPath, { recursive: true });
 	await mkdir(dirname(rendererPath), { recursive: true });
 
 	logger.info("Writing generated files...");
 	await writeFile(preloadPath, preloadText);
 	logger.debug(`Wrote preload to: ${preloadPath}`);
-	await writeFile(registerPath, registerText);
-	logger.debug(`Wrote register to: ${registerPath}`);
+	const handlersPath = join(registerPath, "handlers.ts");
+	const apiPath = join(registerPath, "api.ts");
+	await writeFile(handlersPath, handlersText);
+	logger.debug(`Wrote handlers to: ${handlersPath}`);
+	await writeFile(apiPath, registerAPIText);
+	logger.debug(`Wrote api to: ${apiPath}`);
 	await writeFile(rendererPath, rendererText);
 	logger.debug(`Wrote renderer to: ${rendererPath}`);
 
@@ -257,12 +270,17 @@ export async function watchBuild({
 			});
 
 			const preloadText = formatPreload(sortedPackages);
-			const registerText = formatRegister(
+			const handlersText = formatHandlers(
 				sortedPackages,
-				dirname(registerPath),
+				registerPath,
 				contextPath,
 				customErrorHandler,
 				validatorConfig,
+			);
+			const registerAPIText = formatRegisterAPI(
+				sortedPackages,
+				registerPath,
+				contextPath,
 			);
 			const rendererText = formatRendererIF(
 				sortedPackages,
@@ -273,11 +291,14 @@ export async function watchBuild({
 
 			// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
 			await mkdir(dirname(preloadPath), { recursive: true });
-			await mkdir(dirname(registerPath), { recursive: true });
+			await mkdir(registerPath, { recursive: true });
 			await mkdir(dirname(rendererPath), { recursive: true });
 
 			await writeFile(preloadPath, preloadText);
-			await writeFile(registerPath, registerText);
+			const handlersPath = join(registerPath, "handlers.ts");
+			const apiPath = join(registerPath, "api.ts");
+			await writeFile(handlersPath, handlersText);
+			await writeFile(apiPath, registerAPIText);
 			await writeFile(rendererPath, rendererText);
 
 			logger.info("Rebuild completed successfully.");
@@ -312,12 +333,17 @@ export async function watchBuild({
 		});
 
 		const preloadText = formatPreload(sortedPackages);
-		const registerText = formatRegister(
+		const handlersText = formatHandlers(
 			sortedPackages,
-			dirname(registerPath),
+			registerPath,
 			contextPath,
 			customErrorHandler,
 			validatorConfig,
+		);
+		const registerAPIText = formatRegisterAPI(
+			sortedPackages,
+			registerPath,
+			contextPath,
 		);
 		const rendererText = formatRendererIF(
 			sortedPackages,
@@ -328,11 +354,14 @@ export async function watchBuild({
 
 		// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
 		await mkdir(dirname(preloadPath), { recursive: true });
-		await mkdir(dirname(registerPath), { recursive: true });
+		await mkdir(registerPath, { recursive: true });
 		await mkdir(dirname(rendererPath), { recursive: true });
 
 		await writeFile(preloadPath, preloadText);
-		await writeFile(registerPath, registerText);
+		const handlersPath = join(registerPath, "handlers.ts");
+		const apiPath = join(registerPath, "api.ts");
+		await writeFile(handlersPath, handlersText);
+		await writeFile(apiPath, registerAPIText);
 		await writeFile(rendererPath, rendererText);
 
 		logger.info("Rebuild completed successfully.");
