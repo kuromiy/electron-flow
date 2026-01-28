@@ -12,6 +12,16 @@ export interface ValidatorConfig {
 	pattern?: string;
 }
 
+export interface ErrorHandlerConfig {
+	/**
+	 * エラーハンドラー名のパターン
+	 * {funcName} - 関数名そのまま (registerAuthor)
+	 * {FuncName} - PascalCase (RegisterAuthor)
+	 * @default "{funcName}ErrorHandler"
+	 */
+	pattern?: string;
+}
+
 export function formatHandlers(
 	packageInfos: PackageInfo[],
 	outputPath: string,
@@ -21,6 +31,7 @@ export function formatHandlers(
 		functionName: string;
 	},
 	_validatorConfig?: ValidatorConfig,
+	_errorHandlerConfig?: ErrorHandlerConfig,
 ) {
 	const importStatements = createImportStatement(
 		outputPath,
@@ -30,17 +41,53 @@ export function formatHandlers(
 			const validatorNames = pkg.func
 				.filter((func) => func.validatorName)
 				.map((func) => func.validatorName as string);
+			// 個別エラーハンドラー名を収集（errorHandlerNameが設定されている関数のみ）
+			const errorHandlerNames = pkg.func
+				.filter((func) => func.errorHandlerName)
+				.map((func) => func.errorHandlerName as string);
+			const additionalImports = [
+				...validatorNames,
+				...errorHandlerNames,
+			].filter((name, index, self) => self.indexOf(name) === index); // 重複除去
 			const allImports =
-				validatorNames.length > 0
-					? `${functionNames}, ${validatorNames.join(", ")}`
+				additionalImports.length > 0
+					? `${functionNames}, ${additionalImports.join(", ")}`
 					: functionNames;
 			return `import { ${allImports} } from "${importPath}.js";`;
 		},
 	);
 
-	const errorHandlerCode = customErrorHandler
-		? `return ${customErrorHandler.functionName}(e, { ...ctx, event });`
-		: `return failure(e);`;
+	/**
+	 * エラーハンドリングコードを生成
+	 * 優先順位:
+	 * 1. 個別エラーハンドラー（errorHandlerName）がある場合
+	 *    - nullを返した場合はグローバルへフォールバック
+	 * 2. グローバルエラーハンドラー（customErrorHandler）がある場合
+	 * 3. どちらもなければ failure(e) を返す
+	 */
+	const generateErrorHandlerCode = (errorHandlerName?: string): string => {
+		if (errorHandlerName) {
+			// 個別エラーハンドラーがある場合
+			if (customErrorHandler) {
+				// 個別 + グローバル両方ある場合
+				return `const individualResult = ${errorHandlerName}(e, { ...ctx, event });
+                if (individualResult !== null) {
+                    return failure(individualResult);
+                }
+                return ${customErrorHandler.functionName}(e, { ...ctx, event });`;
+			}
+			// 個別のみ（グローバルなし）
+			return `const individualResult = ${errorHandlerName}(e, { ...ctx, event });
+                if (individualResult !== null) {
+                    return failure(individualResult);
+                }
+                return failure(e);`;
+		}
+		// グローバルのみまたはどちらもなし
+		return customErrorHandler
+			? `return ${customErrorHandler.functionName}(e, { ...ctx, event });`
+			: `return failure(e);`;
+	};
 
 	const handlerStatements = packageInfos.flatMap((pkg) => {
 		return pkg.func.map((func) => {
@@ -51,6 +98,8 @@ export function formatHandlers(
 					? "args: unknown"
 					: "args: any"
 				: "_: unknown";
+
+			const errorHandlerCode = generateErrorHandlerCode(func.errorHandlerName);
 
 			// バリデーター関数がある場合のみバリデーションコードを生成
 			if (hasArgs && hasValidator) {
@@ -118,8 +167,12 @@ export function formatHandlers(
 		importStatements.length > 0 ? `\n${importStatements.join("\n")}\n` : "";
 
 	// ハンドラーがある場合のみ必要なimportを含める
+	// 個別エラーハンドラーがある場合もfailureが必要
+	const hasIndividualErrorHandler = packageInfos.some((pkg) =>
+		pkg.func.some((func) => func.errorHandlerName),
+	);
 	const electronFlowImports =
-		hasHandlers || customErrorHandler
+		hasHandlers || customErrorHandler || hasIndividualErrorHandler
 			? '\nimport { success, failure } from "electron-flow";'
 			: "";
 

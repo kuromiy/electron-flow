@@ -5,6 +5,7 @@ import { formatEventSender } from "./format/event-sender.js";
 import { formatPreload } from "./format/preload.js";
 import { formatPreloadEvents } from "./format/preload-events.js";
 import {
+	type ErrorHandlerConfig,
 	formatHandlers,
 	formatRegisterAPI,
 	type ValidatorConfig,
@@ -47,6 +48,8 @@ type AutoCodeOption = {
 	unwrapResults?: boolean;
 	/** バリデーター設定（オプション） */
 	validatorConfig?: ValidatorConfig;
+	/** 個別エラーハンドラー設定（オプション） */
+	errorHandlerConfig?: ErrorHandlerConfig;
 	/** イベント定義用ディレクトリパス（オプション） */
 	eventDirPath?: string;
 	/** イベント用プリロードコードの出力先パス（オプション） */
@@ -57,8 +60,8 @@ type AutoCodeOption = {
 	rendererEventsPath?: string;
 };
 
-// ValidatorConfig型を再エクスポート
-export type { ValidatorConfig };
+// ValidatorConfig型とErrorHandlerConfig型を再エクスポート
+export type { ErrorHandlerConfig, ValidatorConfig };
 
 export async function build({
 	targetDirPath,
@@ -70,6 +73,7 @@ export async function build({
 	customErrorHandler,
 	unwrapResults = false,
 	validatorConfig,
+	errorHandlerConfig,
 	eventDirPath,
 	preloadEventsPath,
 	eventSenderPath,
@@ -90,7 +94,13 @@ export async function build({
 	}
 
 	// parseFileでインポートされたファイルも収集
-	const { packages } = parseFile(ignores, files, [], validatorConfig?.pattern);
+	const { packages } = parseFile(
+		ignores,
+		files,
+		[],
+		validatorConfig?.pattern,
+		errorHandlerConfig?.pattern,
+	);
 
 	const totalFunctions = packages.reduce(
 		(sum, pkg) => sum + pkg.func.length,
@@ -115,6 +125,7 @@ export async function build({
 		contextPath,
 		customErrorHandler,
 		validatorConfig,
+		errorHandlerConfig,
 	);
 	const registerAPIText = formatRegisterAPI(
 		sortedPackages,
@@ -221,6 +232,7 @@ export async function watchBuild({
 	customErrorHandler,
 	unwrapResults = false,
 	validatorConfig,
+	errorHandlerConfig,
 }: AutoCodeOption) {
 	if (!existsSync(targetDirPath)) {
 		throw new Error(`Target directory does not exist: ${targetDirPath}`);
@@ -237,6 +249,7 @@ export async function watchBuild({
 		...(customErrorHandler && { customErrorHandler }),
 		unwrapResults,
 		...(validatorConfig && { validatorConfig }),
+		...(errorHandlerConfig && { errorHandlerConfig }),
 	});
 
 	// ファイル監視
@@ -276,6 +289,7 @@ export async function watchBuild({
 				contextPath,
 				customErrorHandler,
 				validatorConfig,
+				errorHandlerConfig,
 			);
 			const registerAPIText = formatRegisterAPI(
 				sortedPackages,
@@ -324,6 +338,7 @@ export async function watchBuild({
 			[fullPath],
 			sortedPackages,
 			validatorConfig?.pattern,
+			errorHandlerConfig?.pattern,
 		);
 		sortedPackages = parseResult.packages;
 
@@ -339,6 +354,7 @@ export async function watchBuild({
 			contextPath,
 			customErrorHandler,
 			validatorConfig,
+			errorHandlerConfig,
 		);
 		const registerAPIText = formatRegisterAPI(
 			sortedPackages,

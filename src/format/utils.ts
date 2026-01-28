@@ -32,6 +32,22 @@ export function createValidatorName(funcName: string, pattern: string): string {
 		.replaceAll("{FuncName}", pascalCase);
 }
 
+/**
+ * エラーハンドラー名を生成する
+ * @param funcName 関数名
+ * @param pattern パターン文字列 ({funcName}, {FuncName} をサポート)
+ * @returns エラーハンドラー名
+ */
+export function createErrorHandlerName(
+	funcName: string,
+	pattern: string,
+): string {
+	const pascalCase = funcName.charAt(0).toUpperCase() + funcName.slice(1);
+	return pattern
+		.replaceAll("{funcName}", funcName)
+		.replaceAll("{FuncName}", pascalCase);
+}
+
 export function createBodyStatement(
 	packages: PackageInfo[],
 	apply: (
