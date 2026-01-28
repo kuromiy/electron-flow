@@ -1,6 +1,6 @@
 import { basename, dirname, extname, resolve } from "node:path";
 import * as ts from "typescript";
-import { createValidatorName } from "./format/utils.js";
+import { createErrorHandlerName, createValidatorName } from "./format/utils.js";
 
 type RequestInfo = {
 	name: string;
@@ -12,6 +12,8 @@ type FuncInfo = {
 	request: RequestInfo[];
 	/** バリデーター関数名（存在する場合のみ設定） */
 	validatorName?: string;
+	/** 個別エラーハンドラー関数名（存在する場合のみ設定） */
+	errorHandlerName?: string;
 };
 
 export type PackageInfo = {
@@ -61,6 +63,7 @@ export function parseFile(
 	paths: string[],
 	packages: PackageInfo[] = [],
 	validatorPattern?: string,
+	errorHandlerPattern?: string,
 ): { packages: PackageInfo[]; importedFiles: Set<string> } {
 	const ignoreInfo = ignores.map((ignore) => {
 		const [fileName, funcName] = ignore.split(".");
@@ -107,9 +110,9 @@ export function parseFile(
 			.filter((info) => info.fileName === fileWithOutExt)
 			.map((info) => info.funcName);
 
-		// 1パス目: エクスポートされた関数名を収集（バリデーター検出用）
+		// 1パス目: エクスポートされた関数名を収集（バリデーター・エラーハンドラー検出用）
 		const exportedFunctions = new Set<string>();
-		if (validatorPattern) {
+		if (validatorPattern || errorHandlerPattern) {
 			ts.forEachChild(sourceFile, (node) => {
 				// 関数宣言の場合
 				if (ts.isFunctionDeclaration(node) && node.name) {
@@ -262,10 +265,23 @@ export function parseFile(
 					}
 				}
 
+				// 個別エラーハンドラー関数の存在を確認
+				let errorHandlerName: string | undefined;
+				if (errorHandlerPattern) {
+					const expectedErrorHandlerName = createErrorHandlerName(
+						funcName,
+						errorHandlerPattern,
+					);
+					if (exportedFunctions.has(expectedErrorHandlerName)) {
+						errorHandlerName = expectedErrorHandlerName;
+					}
+				}
+
 				const funcInfo: FuncInfo = {
 					name: funcName,
 					request: params,
 					...(validatorName && { validatorName }),
+					...(errorHandlerName && { errorHandlerName }),
 				};
 
 				const pkg = packages.find((p) => p.path === path);
