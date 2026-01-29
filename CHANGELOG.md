@@ -1,5 +1,24 @@
 # Changelog
 
+## [4.0.0] - 2026-01-30
+
+### Changed
+
+- **BREAKING**: `targetDirPath`を`apiDirPath`に名前変更
+- **BREAKING**: `preloadPath`をファイルパスからディレクトリパスに変更
+  - `api.ts`が出力される（イベント使用時は`event.ts`も出力）
+- **BREAKING**: `rendererPath`をファイルパスからディレクトリパスに変更
+  - `api.ts`が出力される（イベント使用時は`event.ts`も出力）
+- **BREAKING**: イベント関連の個別パス指定を削除し、各ディレクトリへの自動出力に統合
+  - 削除: `preloadEventsPath`, `eventSenderPath`, `rendererEventsPath`
+  - `registerPath`に`event-sender.ts`、`preloadPath`と`rendererPath`に`event.ts`が自動出力
+- `ignores`オプションをオプショナルに変更（デフォルト: `[]`）
+
+### Added
+
+- `AutoCodeOption`型のエクスポート
+- USAGE.mdドキュメント追加
+
 ## [3.1.0] - 2026-01-28
 
 ### Added
