@@ -62,7 +62,7 @@ npx tsx scripts/generate.ts
 ## AutoCodeOption
 
 | プロパティ | 型 | 必須 | 説明 |
-|-----------|-----|------|------|
+| ----------- | ----- | ------ | ------ |
 | `apiDirPath` | `string` | ✓ | API定義ファイルのディレクトリパス |
 | `contextPath` | `string` | ✓ | Contextファイルのパス |
 | `preloadPath` | `string` | ✓ | preload用コード出力ディレクトリ |
@@ -77,7 +77,7 @@ npx tsx scripts/generate.ts
 
 ## 出力ファイル構造
 
-```
+```text
 preloadPath/
 ├── api.ts          # IPC exposeAll
 └── event.ts        # イベントリスナー（eventDirPath指定時）

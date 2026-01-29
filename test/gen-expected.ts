@@ -35,6 +35,9 @@ async function main() {
 				...config.options,
 			};
 
+			// 古いビルド成果物を削除してクリーンビルドを保証
+			await rm(join(OUTPUT_DIR, caseDir), { recursive: true, force: true });
+
 			await build(options);
 
 			// outputからexpectedにコピー

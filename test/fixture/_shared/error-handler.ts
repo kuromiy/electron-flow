@@ -11,8 +11,7 @@ export function handleError(
 	ctx: Context & { event: unknown },
 ): Failure<AppError> {
 	return {
-		isSuccess: false,
-		isFailure: true,
+		_tag: "failure",
 		value: {
 			code: "UNKNOWN_ERROR",
 			message: error instanceof Error ? error.message : "Unknown error",
