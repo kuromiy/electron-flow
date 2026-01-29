@@ -1,6 +1,6 @@
 // auto generated
-import type { alpha, beta } from "../../fixture/007-multiple-files/input/apis/file1.js";
-import type { gamma } from "../../fixture/007-multiple-files/input/apis/file2.js";
+import type { alpha, beta } from "../../../fixture/007-multiple-files/input/apis/file1.js";
+import type { gamma } from "../../../fixture/007-multiple-files/input/apis/file2.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ

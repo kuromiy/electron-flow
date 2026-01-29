@@ -1,5 +1,5 @@
 // auto generated
-import type { included } from "../../fixture/009-ignores/input/apis/sample.js";
+import type { updateItem } from "../../../fixture/006-optional-props/input/apis/sample.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ
@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, unknown>>;
+            updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, unknown>>;
+    updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async included() {
-        return window.api.included();
+    async updateItem(id: string, name: string | undefined, description: string | undefined) {
+        return window.api.updateItem(id, name, description);
     }
 }

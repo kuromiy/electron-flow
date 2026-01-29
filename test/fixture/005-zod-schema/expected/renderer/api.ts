@@ -1,5 +1,5 @@
 // auto generated
-import type { updateItem } from "../../fixture/006-optional-props/input/apis/sample.js";
+import type { createUser } from "../../../fixture/005-zod-schema/input/apis/sample.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ
@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, unknown>>;
+            createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, unknown>>;
+    createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async updateItem(id: string, name: string | undefined, description: string | undefined) {
-        return window.api.updateItem(id, name, description);
+    async createUser(username: string, email: string, age: number) {
+        return window.api.createUser(username, email, age);
     }
 }

@@ -1,6 +1,6 @@
 import { existsSync, statSync, watch } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { formatEventSender } from "./format/event-sender.js";
 import { formatPreload } from "./format/preload.js";
 import { formatPreloadEvents } from "./format/preload-events.js";
@@ -26,15 +26,15 @@ export * from "./result.js";
  * 自動コード生成のオプション設定
  */
 type AutoCodeOption = {
-	/** 処理対象のディレクトリパス */
-	targetDirPath: string;
+	/** API定義用ディレクトリパス */
+	apiDirPath: string;
 	/** 除外するファイルパターンのリスト */
-	ignores: string[];
-	/** プリロード用コードの出力先パス */
+	ignores?: string[];
+	/** プリロード用コードの出力先ディレクトリ（api.ts, event.tsが出力される） */
 	preloadPath: string;
-	/** レジスター用コードの出力先ディレクトリ（handlers.tsとapi.tsが出力される） */
+	/** レジスター用コードの出力先ディレクトリ（handlers.ts, api.ts, event-sender.tsが出力される） */
 	registerPath: string;
-	/** レンダラー用インターフェースコードの出力先パス */
+	/** レンダラー用コードの出力先ディレクトリ（api.ts, event.tsが出力される） */
 	rendererPath: string;
 	/** Context パス */
 	contextPath: string;
@@ -53,12 +53,6 @@ type AutoCodeOption = {
 	errorHandlerConfig?: ErrorHandlerConfig;
 	/** イベント定義用ディレクトリパス（オプション） */
 	eventDirPath?: string;
-	/** イベント用プリロードコードの出力先パス（オプション） */
-	preloadEventsPath?: string;
-	/** EventSender用コードの出力先パス（オプション） */
-	eventSenderPath?: string;
-	/** イベント用レンダラーコードの出力先パス（オプション） */
-	rendererEventsPath?: string;
 };
 
 // 型を再エクスポート
@@ -66,8 +60,8 @@ export type { ErrorHandlerConfig, ValidatorConfig };
 export type { AutoCodeOption };
 
 export async function build({
-	targetDirPath,
-	ignores,
+	apiDirPath,
+	ignores = [],
 	preloadPath,
 	registerPath,
 	rendererPath,
@@ -77,21 +71,18 @@ export async function build({
 	validatorConfig,
 	errorHandlerConfig,
 	eventDirPath,
-	preloadEventsPath,
-	eventSenderPath,
-	rendererEventsPath,
 }: AutoCodeOption) {
-	if (!existsSync(targetDirPath)) {
-		throw new Error(`Target directory does not exist: ${targetDirPath}`);
+	if (!existsSync(apiDirPath)) {
+		throw new Error(`Target directory does not exist: ${apiDirPath}`);
 	}
 
-	const files = await readFilePaths(targetDirPath);
+	const files = await readFilePaths(apiDirPath);
 	logger.info(`Found ${files.length} files to process`);
 	logger.debugObject("File list:", files);
 
 	// ファイルが0個の場合は後続の処理をスキップして空の結果を返す
 	if (files.length === 0) {
-		logger.info("No files found in targetDirPath, skipping build");
+		logger.info("No files found in apiDirPath, skipping build");
 		return { sortedPackages: [], sortedEventPackages: [] };
 	}
 
@@ -136,36 +127,33 @@ export async function build({
 	);
 	const rendererText = formatRendererIF(
 		sortedPackages,
-		dirname(rendererPath),
+		rendererPath,
 		unwrapResults,
 		customErrorHandler,
 	);
 
 	logger.info("Creating output directories...");
-	await mkdir(dirname(preloadPath), { recursive: true });
+	await mkdir(preloadPath, { recursive: true });
 	await mkdir(registerPath, { recursive: true });
-	await mkdir(dirname(rendererPath), { recursive: true });
+	await mkdir(rendererPath, { recursive: true });
 
 	logger.info("Writing generated files...");
-	await writeFile(preloadPath, preloadText);
-	logger.debug(`Wrote preload to: ${preloadPath}`);
+	const preloadApiPath = join(preloadPath, "api.ts");
+	await writeFile(preloadApiPath, preloadText);
+	logger.debug(`Wrote preload to: ${preloadApiPath}`);
 	const handlersPath = join(registerPath, "handlers.ts");
 	const apiPath = join(registerPath, "api.ts");
 	await writeFile(handlersPath, handlersText);
 	logger.debug(`Wrote handlers to: ${handlersPath}`);
 	await writeFile(apiPath, registerAPIText);
 	logger.debug(`Wrote api to: ${apiPath}`);
-	await writeFile(rendererPath, rendererText);
-	logger.debug(`Wrote renderer to: ${rendererPath}`);
+	const rendererApiPath = join(rendererPath, "api.ts");
+	await writeFile(rendererApiPath, rendererText);
+	logger.debug(`Wrote renderer to: ${rendererApiPath}`);
 
 	// イベント関連ファイルの生成
 	let sortedEventPackages: ReturnType<typeof parseEventFile>["packages"] = [];
-	if (
-		eventDirPath &&
-		preloadEventsPath &&
-		eventSenderPath &&
-		rendererEventsPath
-	) {
+	if (eventDirPath) {
 		if (existsSync(eventDirPath)) {
 			const eventFiles = await readFilePaths(eventDirPath);
 			logger.info(`Found ${eventFiles.length} event files to process`);
@@ -191,22 +179,22 @@ export async function build({
 					}));
 			}
 
+			const preloadEventsPath = join(preloadPath, "event.ts");
+			const eventSenderPath = join(registerPath, "event-sender.ts");
+			const rendererEventsPath = join(rendererPath, "event.ts");
+
 			const preloadEventsText = formatPreloadEvents(
 				sortedEventPackages,
-				dirname(preloadEventsPath),
+				preloadPath,
 			);
 			const eventSenderText = formatEventSender(
 				sortedEventPackages,
-				dirname(eventSenderPath),
+				registerPath,
 			);
 			const rendererEventsText = formatRendererEvents(
 				sortedEventPackages,
-				dirname(rendererEventsPath),
+				rendererPath,
 			);
-
-			await mkdir(dirname(preloadEventsPath), { recursive: true });
-			await mkdir(dirname(eventSenderPath), { recursive: true });
-			await mkdir(dirname(rendererEventsPath), { recursive: true });
 
 			await writeFile(preloadEventsPath, preloadEventsText);
 			logger.debug(`Wrote preload-events to: ${preloadEventsPath}`);
@@ -225,8 +213,8 @@ export async function build({
 }
 
 export async function watchBuild({
-	targetDirPath,
-	ignores,
+	apiDirPath,
+	ignores = [],
 	preloadPath,
 	registerPath,
 	rendererPath,
@@ -235,14 +223,15 @@ export async function watchBuild({
 	unwrapResults = false,
 	validatorConfig,
 	errorHandlerConfig,
+	eventDirPath,
 }: AutoCodeOption) {
-	if (!existsSync(targetDirPath)) {
-		throw new Error(`Target directory does not exist: ${targetDirPath}`);
+	if (!existsSync(apiDirPath)) {
+		throw new Error(`Target directory does not exist: ${apiDirPath}`);
 	}
 
 	// 初回ビルド
-	let { sortedPackages } = await build({
-		targetDirPath,
+	let { sortedPackages, sortedEventPackages } = await build({
+		apiDirPath,
 		ignores,
 		preloadPath,
 		registerPath,
@@ -252,10 +241,11 @@ export async function watchBuild({
 		unwrapResults,
 		...(validatorConfig && { validatorConfig }),
 		...(errorHandlerConfig && { errorHandlerConfig }),
+		...(eventDirPath && { eventDirPath }),
 	});
 
-	// ファイル監視
-	watch(targetDirPath, { recursive: true }, async (eventType, fileName) => {
+	// API用ファイル監視
+	watch(apiDirPath, { recursive: true }, async (eventType, fileName) => {
 		if (!fileName) {
 			return;
 		}
@@ -266,7 +256,7 @@ export async function watchBuild({
 			return;
 		}
 
-		const fullPath = join(targetDirPath, fileName);
+		const fullPath = join(apiDirPath, fileName);
 		const stats = statSync(fullPath, { throwIfNoEntry: false });
 		// ファイルが削除されたのでそれに関する処理を実行
 		if (!stats) {
@@ -300,22 +290,22 @@ export async function watchBuild({
 			);
 			const rendererText = formatRendererIF(
 				sortedPackages,
-				dirname(rendererPath),
+				rendererPath,
 				unwrapResults,
 				customErrorHandler,
 			);
 
 			// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
-			await mkdir(dirname(preloadPath), { recursive: true });
+			await mkdir(preloadPath, { recursive: true });
 			await mkdir(registerPath, { recursive: true });
-			await mkdir(dirname(rendererPath), { recursive: true });
+			await mkdir(rendererPath, { recursive: true });
 
-			await writeFile(preloadPath, preloadText);
+			await writeFile(join(preloadPath, "api.ts"), preloadText);
 			const handlersPath = join(registerPath, "handlers.ts");
 			const apiPath = join(registerPath, "api.ts");
 			await writeFile(handlersPath, handlersText);
 			await writeFile(apiPath, registerAPIText);
-			await writeFile(rendererPath, rendererText);
+			await writeFile(join(rendererPath, "api.ts"), rendererText);
 
 			logger.info("Rebuild completed successfully.");
 
@@ -365,25 +355,126 @@ export async function watchBuild({
 		);
 		const rendererText = formatRendererIF(
 			sortedPackages,
-			dirname(rendererPath),
+			rendererPath,
 			unwrapResults,
 			customErrorHandler,
 		);
 
 		// 初回ビルドがスキップされた場合でも動作するようディレクトリを作成
-		await mkdir(dirname(preloadPath), { recursive: true });
+		await mkdir(preloadPath, { recursive: true });
 		await mkdir(registerPath, { recursive: true });
-		await mkdir(dirname(rendererPath), { recursive: true });
+		await mkdir(rendererPath, { recursive: true });
 
-		await writeFile(preloadPath, preloadText);
+		await writeFile(join(preloadPath, "api.ts"), preloadText);
 		const handlersPath = join(registerPath, "handlers.ts");
 		const apiPath = join(registerPath, "api.ts");
 		await writeFile(handlersPath, handlersText);
 		await writeFile(apiPath, registerAPIText);
-		await writeFile(rendererPath, rendererText);
+		await writeFile(join(rendererPath, "api.ts"), rendererText);
 
 		logger.info("Rebuild completed successfully.");
 	});
+
+	// イベント用ファイル監視
+	if (eventDirPath && existsSync(eventDirPath)) {
+		watch(eventDirPath, { recursive: true }, async (eventType, fileName) => {
+			if (!fileName) {
+				return;
+			}
+
+			// ロック取得
+			using locked = lock(`event:${fileName}`);
+			if (!locked.isLock) {
+				return;
+			}
+
+			const fullPath = join(eventDirPath, fileName);
+			const stats = statSync(fullPath, { throwIfNoEntry: false });
+			// ファイルが削除されたのでそれに関する処理を実行
+			if (!stats) {
+				logger.info(`Event file deleted: ${fileName}`);
+
+				sortedEventPackages = sortedEventPackages.filter(
+					(file) => file.path !== fullPath,
+				);
+
+				if (sortedEventPackages.length === 0) {
+					logger.info(
+						"All event files have been deleted, generating empty templates",
+					);
+				}
+
+				sortedEventPackages.sort((a, b) => a.path.localeCompare(b.path));
+				sortedEventPackages.forEach((pkg) => {
+					pkg.events.sort((a, b) => a.name.localeCompare(b.name));
+				});
+
+				const preloadEventsText = formatPreloadEvents(
+					sortedEventPackages,
+					preloadPath,
+				);
+				const eventSenderText = formatEventSender(
+					sortedEventPackages,
+					registerPath,
+				);
+				const rendererEventsText = formatRendererEvents(
+					sortedEventPackages,
+					rendererPath,
+				);
+
+				await writeFile(join(preloadPath, "event.ts"), preloadEventsText);
+				await writeFile(join(registerPath, "event-sender.ts"), eventSenderText);
+				await writeFile(join(rendererPath, "event.ts"), rendererEventsText);
+
+				logger.info("Event rebuild completed successfully.");
+
+				return;
+			}
+			// ディレクトリの場合は無視
+			if (stats.isDirectory()) {
+				return;
+			}
+			// renameの場合、新規or削除になりビルド不要
+			if (eventType === "rename") {
+				return;
+			}
+
+			logger.info(`Event file changed: ${fullPath}`);
+
+			// イベントファイルを再度読み込み
+			const eventFiles = await readFilePaths(eventDirPath);
+			if (eventFiles.length > 0) {
+				const { packages: eventPackages } = parseEventFile(eventFiles);
+				sortedEventPackages = eventPackages
+					.toSorted((a, b) => a.path.localeCompare(b.path))
+					.map((pkg) => ({
+						...pkg,
+						events: pkg.events.toSorted((a, b) => a.name.localeCompare(b.name)),
+					}));
+			} else {
+				sortedEventPackages = [];
+			}
+
+			const preloadEventsText = formatPreloadEvents(
+				sortedEventPackages,
+				preloadPath,
+			);
+			const eventSenderText = formatEventSender(
+				sortedEventPackages,
+				registerPath,
+			);
+			const rendererEventsText = formatRendererEvents(
+				sortedEventPackages,
+				rendererPath,
+			);
+
+			await writeFile(join(preloadPath, "event.ts"), preloadEventsText);
+			await writeFile(join(registerPath, "event-sender.ts"), eventSenderText);
+			await writeFile(join(rendererPath, "event.ts"), rendererEventsText);
+
+			logger.info("Event rebuild completed successfully.");
+		});
+	}
 }
 
 // ロック

@@ -27,25 +27,12 @@ async function main() {
 
 			// outputディレクトリに出力（build.test.tsと同じ相対パス）
 			const options = {
-				targetDirPath: join(FIXTURE_DIR, caseDir, "input/apis"),
+				apiDirPath: join(FIXTURE_DIR, caseDir, "input/apis"),
 				contextPath: join(SHARED_DIR, "context.ts"),
-				ignores: [],
 				registerPath: join(OUTPUT_DIR, caseDir, "register"),
-				preloadPath: join(OUTPUT_DIR, caseDir, "preload.ts"),
-				rendererPath: join(OUTPUT_DIR, caseDir, "renderer.tsx"),
+				preloadPath: join(OUTPUT_DIR, caseDir, "preload"),
+				rendererPath: join(OUTPUT_DIR, caseDir, "renderer"),
 				...config.options,
-				// イベント機能がある場合は出力パスを設定
-				...(config.hasEvents
-					? {
-							preloadEventsPath: join(OUTPUT_DIR, caseDir, "preload-events.ts"),
-							eventSenderPath: join(OUTPUT_DIR, caseDir, "event-sender.ts"),
-							rendererEventsPath: join(
-								OUTPUT_DIR,
-								caseDir,
-								"renderer-events.tsx",
-							),
-						}
-					: {}),
 			};
 
 			await build(options);

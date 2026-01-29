@@ -1,5 +1,5 @@
 // auto generated
-import type { createUser } from "../../fixture/005-zod-schema/input/apis/sample.js";
+import type { ping } from "../../../fixture/002-no-args/input/apis/sample.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ
@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
+            ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
+    ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async createUser(username: string, email: string, age: number) {
-        return window.api.createUser(username, email, age);
+    async ping() {
+        return window.api.ping();
     }
 }

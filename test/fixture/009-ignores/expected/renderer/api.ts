@@ -1,5 +1,5 @@
 // auto generated
-import type { updateRecord } from "../../fixture/012-validator-and-error-handler/input/apis/sample.js";
+import type { included } from "../../../fixture/009-ignores/input/apis/sample.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ
@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            updateRecord: (id: string, value: number) => Promise<Result<ReturnTypeUnwrapped<typeof updateRecord>, unknown>>;
+            included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    updateRecord: (id: string, value: number) => Promise<Result<ReturnTypeUnwrapped<typeof updateRecord>, unknown>>;
+    included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async updateRecord(id: string, value: number) {
-        return window.api.updateRecord(id, value);
+    async included() {
+        return window.api.included();
     }
 }

@@ -1,5 +1,5 @@
 // auto generated
-import type { ping } from "../../fixture/002-no-args/input/apis/sample.js";
+import type { getUser } from "../../../fixture/004-external-schema/input/apis/user-api.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ
@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
+            getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
+    getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async ping() {
-        return window.api.ping();
+    async getUser(userId: string, email: string) {
+        return window.api.getUser(userId, email);
     }
 }

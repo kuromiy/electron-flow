@@ -1,6 +1,6 @@
 // auto generated
-import type { getUser } from "../../fixture/004-external-schema/input/apis/user-api.js";
-import type { Result } from "electron-flow";
+import type { getData } from "../../../fixture/003-unwrap-results/input/apis/sample.js";
+import { isFailure, type Result } from "electron-flow/result";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,19 +13,23 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, unknown>>;
+            getData: (id: string) => Promise<Result<ReturnTypeUnwrapped<typeof getData>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, unknown>>;
+    getData: (id: string) => Promise<ReturnTypeUnwrapped<typeof getData>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async getUser(userId: string, email: string) {
-        return window.api.getUser(userId, email);
+    async getData(id: string) {
+        const response = await window.api.getData(id);
+        if (isFailure(response)) {
+            throw response.value;
+        }
+        return response.value;
     }
 }

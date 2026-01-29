@@ -1,7 +1,7 @@
 // auto generated
 import { ipcRenderer } from "electron";
 
-import type { ErrorMessage, SuccessMessage } from "../../fixture/013-events/input/events/notification.js";
+import type { ErrorMessage, SuccessMessage } from "../../../fixture/013-events/input/events/notification.js";
 
 export default {
     onError: (cb: (value: ErrorMessage) => void) => {

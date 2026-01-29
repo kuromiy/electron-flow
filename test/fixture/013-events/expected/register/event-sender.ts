@@ -1,6 +1,6 @@
 // auto generated
 import type { WebContents } from "electron";
-import type { ErrorMessage, SuccessMessage } from "../../fixture/013-events/input/events/notification.js";
+import type { ErrorMessage, SuccessMessage } from "../../../fixture/013-events/input/events/notification.js";
 
 /**
  * 型安全なイベント送信クラス

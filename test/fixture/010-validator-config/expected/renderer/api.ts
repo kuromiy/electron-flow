@@ -1,5 +1,5 @@
 // auto generated
-import type { saveData } from "../../fixture/011-error-handler-config/input/apis/sample.js";
+import type { createItem } from "../../../fixture/010-validator-config/input/apis/sample.js";
 import type { Result } from "electron-flow";
 
 // Promise を外す型ユーティリティ
@@ -13,19 +13,19 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            saveData: (data: string) => Promise<Result<ReturnTypeUnwrapped<typeof saveData>, unknown>>;
+            createItem: (name: string, price: number) => Promise<Result<ReturnTypeUnwrapped<typeof createItem>, unknown>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    saveData: (data: string) => Promise<Result<ReturnTypeUnwrapped<typeof saveData>, unknown>>;
+    createItem: (name: string, price: number) => Promise<Result<ReturnTypeUnwrapped<typeof createItem>, unknown>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
-    async saveData(data: string) {
-        return window.api.saveData(data);
+    async createItem(name: string, price: number) {
+        return window.api.createItem(name, price);
     }
 }

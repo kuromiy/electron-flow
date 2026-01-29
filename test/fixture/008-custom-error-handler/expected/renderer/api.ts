@@ -1,6 +1,6 @@
 // auto generated
-import type { processData } from "../../fixture/008-custom-error-handler/input/apis/sample.js";
-import type { handleError } from "../../fixture/_shared/error-handler.js";
+import type { processData } from "../../../fixture/008-custom-error-handler/input/apis/sample.js";
+import type { handleError } from "../../../fixture/_shared/error-handler.js";
 import type { Result, Failure } from "electron-flow";
 
 // Promise を外す型ユーティリティ

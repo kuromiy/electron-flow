@@ -6,8 +6,8 @@ const config: BuildTestCase = {
 	expectedFiles: [
 		"register/handlers.ts",
 		"register/api.ts",
-		"preload.ts",
-		"renderer.tsx",
+		"preload/api.ts",
+		"renderer/api.ts",
 	],
 };
 

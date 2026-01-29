@@ -7,8 +7,6 @@ export interface BuildTestCase {
 	name: string;
 	options?: Partial<AutoCodeOption>;
 	expectedFiles: string[];
-	/** イベント機能のテストの場合true */
-	hasEvents?: boolean;
 }
 
 /** 異常系: エラー検証テスト */

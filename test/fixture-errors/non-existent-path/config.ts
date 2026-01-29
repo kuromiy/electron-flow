@@ -1,9 +1,9 @@
 import type { ErrorTestCase } from "../../types.js";
 
 const config: ErrorTestCase = {
-	name: "存在しないtargetDirPathでエラー",
+	name: "存在しないapiDirPathでエラー",
 	options: {
-		targetDirPath: "./non-existent-path",
+		apiDirPath: "./non-existent-path",
 	},
 	expectError: "Target directory does not exist",
 };
