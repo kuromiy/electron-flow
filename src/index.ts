@@ -60,8 +60,9 @@ type AutoCodeOption = {
 	rendererEventsPath?: string;
 };
 
-// ValidatorConfig型とErrorHandlerConfig型を再エクスポート
+// 型を再エクスポート
 export type { ErrorHandlerConfig, ValidatorConfig };
+export type { AutoCodeOption };
 
 export async function build({
 	targetDirPath,

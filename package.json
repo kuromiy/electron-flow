@@ -8,7 +8,7 @@
 		"build": "tsc",
 		"dev": "tsc --watch",
 		"postinstall": "npm run build",
-		"test": "tsx ./test/index.test.ts && tsx ./test/events.test.ts",
+		"test": "tsx --test ./test/build.test.ts ./test/build-errors.test.ts",
 		"prepare": "husky",
 		"lint": "npx @biomejs/biome check",
 		"check": "tsc --noEmit -p tsconfig.test.json"
