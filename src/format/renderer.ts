@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import type { PackageInfo } from "../parse.js";
+import type { PackageInfo } from "../parse/parseFile.js";
 import { createImportStatement } from "./utils.js";
 
 export function formatRendererIF(

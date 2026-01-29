@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import type { EventPackageInfo } from "../parse.js";
+import type { EventPackageInfo } from "../parse/parseEventFile.js";
 
 /**
  * EventSenderクラスを生成する

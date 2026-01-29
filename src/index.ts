@@ -13,7 +13,8 @@ import {
 import { formatRendererIF } from "./format/renderer.js";
 import { formatRendererEvents } from "./format/renderer-events.js";
 import { logger } from "./logger.js";
-import { parseEventFile, parseFile } from "./parse.js";
+import { parseEventFile } from "./parse/parseEventFile.js";
+import { parseFile } from "./parse/parseFile.js";
 import { readFilePaths } from "./utils.js";
 
 // ロガー設定関数をエクスポート
