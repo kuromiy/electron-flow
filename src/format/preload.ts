@@ -1,4 +1,4 @@
-import type { PackageInfo } from "../parse.js";
+import type { PackageInfo } from "../parse/parseFile.js";
 import { createBodyStatement } from "./utils.js";
 
 export function formatPreload(packages: PackageInfo[]) {

@@ -1,5 +1,5 @@
 import { relative } from "node:path";
-import type { EventPackageInfo } from "../parse.js";
+import type { EventPackageInfo } from "../parse/parseEventFile.js";
 
 /**
  * イベント購読用のRenderer型定義とServiceクラスを生成する

@@ -1,6 +1,7 @@
 node_modules/
 dist/
 test/output/
+test/output-errors/
 .claude
 .mcp.json
 .serena
