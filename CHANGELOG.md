@@ -1,5 +1,28 @@
 # Changelog
 
+## [5.0.0] - 2026-01-31
+
+### Changed
+
+- **BREAKING**: エラーハンドラーが生の値を返すように変更
+  - 以前: エラーハンドラーは`Failure<E>`型を返す必要があった
+  - 現在: エラーハンドラーは生の値を返し、フレームワークが`failure()`でラップする
+  - これによりエラーハンドラーの実装がシンプルになる
+- **BREAKING**: renderer側のエラー型が具体的な型に変更
+  - 個別エラーハンドラーあり: `{FuncName}ErrorType | UnknownError`（グローバルありの場合は`| GlobalErrorType`も追加）
+  - グローバルエラーハンドラーのみ: `GlobalErrorType | UnknownError`
+  - エラーハンドラーなし: `UnknownError`
+- エラーハンドラーはtry-catchで囲まれ、ハンドラー自体がエラーを投げた場合は`UnknownError`を返す
+
+### Added
+
+- `UnknownError`型を追加（エラーハンドラーが処理できなかったエラーを表現）
+  - `unknownError(value)`: UnknownError型を生成
+  - `isUnknownError(error)`: UnknownError型かどうかを判定
+- `customErrorHandler.debug`オプションを追加（デフォルト: false）
+- `errorHandlerConfig.debug`オプションを追加（デフォルト: false）
+  - `true`の場合、エラーハンドラーがエラーを投げた時に`console.warn`を出力
+
 ## [4.0.0] - 2026-01-30
 
 ### Changed
