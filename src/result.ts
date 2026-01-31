@@ -18,15 +18,15 @@ export function failure<E = Error>(value: E): Failure<E> {
 	return { _tag: "failure", value };
 }
 
-export function isSuccess<T, E = Error>(
-	result: Result<T, E>,
-): result is Success<T> {
+export function isSuccess<R extends { _tag: string }>(
+	result: R,
+): result is Extract<R, { _tag: "success" }> {
 	return result._tag === "success";
 }
 
-export function isFailure<T, E = Error>(
-	result: Result<T, E>,
-): result is Failure<E> {
+export function isFailure<R extends { _tag: string }>(
+	result: R,
+): result is Extract<R, { _tag: "failure" }> {
 	return result._tag === "failure";
 }
 
