@@ -44,6 +44,8 @@ type AutoCodeOption = {
 		path: string;
 		/** エクスポートされた関数名 */
 		functionName: string;
+		/** エラーハンドラーが失敗した場合にconsole.warnを出力するかどうか（デフォルト: false） */
+		debug?: boolean;
 	};
 	/** Result型をアンラップして例外ベースのAPIに変換するか（デフォルト: false） */
 	unwrapResults?: boolean;

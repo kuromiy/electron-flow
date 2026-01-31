@@ -1,6 +1,6 @@
 // auto generated
 import type { ping } from "../../../fixture/002-no-args/input/apis/sample.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
+            ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, unknown>>;
+    ping: () => Promise<Result<ReturnTypeUnwrapped<typeof ping>, UnknownError>>;
 }
 
 // サービス実装クラス

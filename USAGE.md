@@ -15,7 +15,7 @@ npm install github:kuromiy/electron-flow
 
 ```bash
 # タグ指定
-npm install github:kuromiy/electron-flow#v4.0.0
+npm install github:kuromiy/electron-flow#v5.0.0
 
 # ブランチ指定
 npm install github:kuromiy/electron-flow#main
@@ -152,8 +152,30 @@ await build({
   customErrorHandler: {
     path: "./src/error-handler.ts",
     functionName: "handleError",
+    debug: true, // エラーハンドラーがエラーを投げた時にconsole.warn出力（省略可）
   },
 });
+```
+
+エラーハンドラーは**生の値**を返します（`failure()`でラップ不要）：
+
+```typescript
+// src/error-handler.ts
+import type { IpcMainInvokeEvent } from "electron";
+import type { Context } from "./context";
+
+type ErrorContext = Context & { event: IpcMainInvokeEvent };
+
+export function handleError(
+  error: unknown,
+  ctx: ErrorContext
+): { code: string; message: string } {
+  // 生の値を返す（failure()でラップ不要）
+  if (error instanceof ValidationError) {
+    return { code: "VALIDATION_ERROR", message: error.message };
+  }
+  return { code: "UNKNOWN_ERROR", message: "An error occurred" };
+}
 ```
 
 ### バリデーター設定
@@ -174,8 +196,29 @@ await build({
   // ...
   errorHandlerConfig: {
     pattern: "{funcName}ErrorHandler",  // getUserErrorHandler のような関数を検出
+    debug: true, // エラーハンドラーがエラーを投げた時にconsole.warn出力（省略可）
   },
 });
+```
+
+個別エラーハンドラーも**生の値**または**null**を返します：
+
+```typescript
+// src/apis/user.ts
+import type { IpcMainInvokeEvent } from "electron";
+import type { Context } from "../context";
+
+type ErrorContext = Context & { event: IpcMainInvokeEvent };
+
+export function getUserErrorHandler(
+  error: unknown,
+  ctx: ErrorContext
+): { code: "USER_NOT_FOUND" } | null {
+  if (error instanceof UserNotFoundError) {
+    return { code: "USER_NOT_FOUND" }; // 生の値を返す
+  }
+  return null; // nullを返すとグローバルエラーハンドラーにフォールバック
+}
 ```
 
 ## Result型
@@ -198,3 +241,31 @@ export async function getUser(
 ```
 
 `unwrapResults: true`を指定すると、Result型を自動でアンラップし、エラー時は例外をスローするAPIに変換されます。
+
+## UnknownError型
+
+エラーハンドラーが処理できなかったエラー（またはエラーハンドラー自体がエラーを投げた場合）は`UnknownError`型でラップされます。
+
+```typescript
+import { isUnknownError, type UnknownError } from "electron-flow";
+
+// renderer側での使用例
+const result = await api.getUser({ id: "123" });
+if (result._tag === "failure") {
+  if (isUnknownError(result.error)) {
+    console.error("未処理のエラー:", result.error.value);
+  } else {
+    // 型安全なエラーハンドリング
+    console.error("エラーコード:", result.error.code);
+  }
+}
+```
+
+renderer側のエラー型は以下のルールで決定されます：
+
+| エラーハンドラー設定 | エラー型 |
+| --- | --- |
+| なし | `UnknownError` |
+| グローバルのみ | `GlobalErrorType \| UnknownError` |
+| 個別のみ | `{FuncName}ErrorType \| UnknownError` |
+| グローバル + 個別 | `{FuncName}ErrorType \| GlobalErrorType \| UnknownError` |

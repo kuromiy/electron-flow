@@ -1,7 +1,7 @@
 // auto generated
 import type { alpha, beta } from "../../../fixture/007-multiple-files/input/apis/file1.js";
 import type { gamma } from "../../../fixture/007-multiple-files/input/apis/file2.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -14,18 +14,18 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            alpha: () => Promise<Result<ReturnTypeUnwrapped<typeof alpha>, unknown>>;
-            beta: (value: number) => Promise<Result<ReturnTypeUnwrapped<typeof beta>, unknown>>;
-            gamma: (name: string) => Promise<Result<ReturnTypeUnwrapped<typeof gamma>, unknown>>;
+            alpha: () => Promise<Result<ReturnTypeUnwrapped<typeof alpha>, UnknownError>>;
+            beta: (value: number) => Promise<Result<ReturnTypeUnwrapped<typeof beta>, UnknownError>>;
+            gamma: (name: string) => Promise<Result<ReturnTypeUnwrapped<typeof gamma>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    alpha: () => Promise<Result<ReturnTypeUnwrapped<typeof alpha>, unknown>>;
-    beta: (value: number) => Promise<Result<ReturnTypeUnwrapped<typeof beta>, unknown>>;
-    gamma: (name: string) => Promise<Result<ReturnTypeUnwrapped<typeof gamma>, unknown>>;
+    alpha: () => Promise<Result<ReturnTypeUnwrapped<typeof alpha>, UnknownError>>;
+    beta: (value: number) => Promise<Result<ReturnTypeUnwrapped<typeof beta>, UnknownError>>;
+    gamma: (name: string) => Promise<Result<ReturnTypeUnwrapped<typeof gamma>, UnknownError>>;
 }
 
 // サービス実装クラス

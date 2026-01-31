@@ -20,6 +20,11 @@ export interface ErrorHandlerConfig {
 	 * @default "{funcName}ErrorHandler"
 	 */
 	pattern?: string;
+	/**
+	 * エラーハンドラーが失敗した場合にconsole.warnを出力するかどうか
+	 * @default false
+	 */
+	debug?: boolean;
 }
 
 export function formatHandlers(
@@ -29,9 +34,10 @@ export function formatHandlers(
 	customErrorHandler?: {
 		path: string;
 		functionName: string;
+		debug?: boolean;
 	},
 	_validatorConfig?: ValidatorConfig,
-	_errorHandlerConfig?: ErrorHandlerConfig,
+	errorHandlerConfig?: ErrorHandlerConfig,
 ) {
 	const importStatements = createImportStatement(
 		outputPath,
@@ -57,6 +63,9 @@ export function formatHandlers(
 		},
 	);
 
+	// debugオプションの決定（customErrorHandlerまたはerrorHandlerConfigのdebugがtrueならtrue）
+	const debug = customErrorHandler?.debug || errorHandlerConfig?.debug || false;
+
 	/**
 	 * エラーハンドリングコードを生成
 	 * 優先順位:
@@ -64,29 +73,50 @@ export function formatHandlers(
 	 *    - nullを返した場合はグローバルへフォールバック
 	 * 2. グローバルエラーハンドラー（customErrorHandler）がある場合
 	 * 3. どちらもなければ failure(e) を返す
+	 *
+	 * すべてのエラーハンドラーはtry-catchで囲み、ハンドラーがエラーを投げた場合はfailure(e)を返す
+	 * カスタムエラーハンドラーは生の値を返すので、failure()でラップする
 	 */
 	const generateErrorHandlerCode = (errorHandlerName?: string): string => {
+		const warnCode = debug
+			? `console.warn("[electron-flow] Error handler threw an error:", handlerError);
+                    `
+			: "";
+
 		if (errorHandlerName) {
 			// 個別エラーハンドラーがある場合
 			if (customErrorHandler) {
 				// 個別 + グローバル両方ある場合
-				return `const individualResult = ${errorHandlerName}(e, { ...ctx, event });
-                if (individualResult !== null) {
-                    return failure(individualResult);
-                }
-                return ${customErrorHandler.functionName}(e, { ...ctx, event });`;
+				return `try {
+                    const individualResult = ${errorHandlerName}(e, { ...ctx, event });
+                    if (individualResult !== null) {
+                        return failure(individualResult);
+                    }
+                    return failure(${customErrorHandler.functionName}(e, { ...ctx, event }));
+                } catch (handlerError) {
+                    ${warnCode}return failure(unknownError(e));
+                }`;
 			}
 			// 個別のみ（グローバルなし）
-			return `const individualResult = ${errorHandlerName}(e, { ...ctx, event });
-                if (individualResult !== null) {
-                    return failure(individualResult);
-                }
-                return failure(e);`;
+			return `try {
+                    const individualResult = ${errorHandlerName}(e, { ...ctx, event });
+                    if (individualResult !== null) {
+                        return failure(individualResult);
+                    }
+                    return failure(unknownError(e));
+                } catch (handlerError) {
+                    ${warnCode}return failure(unknownError(e));
+                }`;
 		}
 		// グローバルのみまたはどちらもなし
-		return customErrorHandler
-			? `return ${customErrorHandler.functionName}(e, { ...ctx, event });`
-			: `return failure(e);`;
+		if (customErrorHandler) {
+			return `try {
+                    return failure(${customErrorHandler.functionName}(e, { ...ctx, event }));
+                } catch (handlerError) {
+                    ${warnCode}return failure(unknownError(e));
+                }`;
+		}
+		return `return failure(unknownError(e));`;
 	};
 
 	const handlerStatements = packageInfos.flatMap((pkg) => {
@@ -173,7 +203,7 @@ export function formatHandlers(
 	);
 	const electronFlowImports =
 		hasHandlers || customErrorHandler || hasIndividualErrorHandler
-			? '\nimport { success, failure } from "electron-flow";'
+			? '\nimport { success, failure, unknownError } from "electron-flow";'
 			: "";
 
 	const text = `// auto generated

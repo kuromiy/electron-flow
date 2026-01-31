@@ -2,6 +2,9 @@ import { relative } from "node:path";
 import type { PackageInfo } from "../parse/parseFile.js";
 import { createImportStatement } from "./utils.js";
 
+// 先頭を大文字にするヘルパー関数
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
 export function formatRendererIF(
 	packages: PackageInfo[],
 	outputPath: string,
@@ -11,22 +14,68 @@ export function formatRendererIF(
 		functionName: string;
 	},
 ) {
+	// 個別エラーハンドラーを持つ関数を収集
+	const functionsWithErrorHandler = packages.flatMap((pkg) =>
+		pkg.func
+			.filter((func) => func.errorHandlerName)
+			.map((func) => ({
+				funcName: func.name,
+				errorHandlerName: func.errorHandlerName as string,
+				importPath: pkg.path,
+			})),
+	);
+
 	const importStatements = createImportStatement(
 		outputPath,
 		packages,
-		(functionNames, importPath) => {
-			return `import type { ${functionNames} } from "${importPath}.js";`;
+		(functionNames, importPath, pkg) => {
+			// 個別エラーハンドラー名を収集（このパッケージに含まれるもの）
+			const errorHandlerNames = pkg.func
+				.filter((func) => func.errorHandlerName)
+				.map((func) => func.errorHandlerName as string);
+			const additionalTypeImports = errorHandlerNames.filter(
+				(name, index, self) => self.indexOf(name) === index,
+			);
+			const allImports =
+				additionalTypeImports.length > 0
+					? `${functionNames}, ${additionalTypeImports.join(", ")}`
+					: functionNames;
+			return `import type { ${allImports} } from "${importPath}.js";`;
 		},
 	);
 
 	const functions = packages.flatMap((pkg) => {
 		return pkg.func.map((func) => {
-			return { name: func.name, request: func.request };
+			return {
+				name: func.name,
+				request: func.request,
+				errorHandlerName: func.errorHandlerName,
+			};
 		});
 	});
 
-	// エラー型の決定（customErrorHandlerがあればErrorType、なければunknown）
-	const errorType = customErrorHandler ? "ErrorType" : "unknown";
+	// 関数ごとのエラー型を決定
+	const getErrorTypeForFunction = (func: {
+		name: string;
+		errorHandlerName: string | undefined;
+	}) => {
+		if (func.errorHandlerName) {
+			// 個別エラーハンドラーあり
+			const individualType = `${capitalize(func.name)}ErrorType`;
+			if (customErrorHandler) {
+				// 個別 + グローバル → union型（フォールバック時はUnknownError）
+				return `${individualType} | GlobalErrorType | UnknownError`;
+			}
+			// 個別のみ → union with UnknownError
+			return `${individualType} | UnknownError`;
+		}
+		// 個別なし
+		if (customErrorHandler) {
+			// グローバルのみ → union with UnknownError（ハンドラーエラー時）
+			return "GlobalErrorType | UnknownError";
+		}
+		return "UnknownError";
+	};
 
 	// インターフェース定義
 	const interfaceLines = unwrapResults
@@ -34,11 +83,13 @@ export function formatRendererIF(
 				return `${func.name}: (${func.request.map((line) => `${line.name}: ${line.type}`).join(", ")}) => Promise<ReturnTypeUnwrapped<typeof ${func.name}>>`;
 			})
 		: functions.map((func) => {
+				const errorType = getErrorTypeForFunction(func);
 				return `${func.name}: (${func.request.map((line) => `${line.name}: ${line.type}`).join(", ")}) => Promise<Result<ReturnTypeUnwrapped<typeof ${func.name}>, ${errorType}>>`;
 			});
 
 	// window.api メソッドの型定義
 	const windowApiMethods = functions.map((func) => {
+		const errorType = getErrorTypeForFunction(func);
 		return `${func.name}: (${func.request.map((req) => `${req.name}: ${req.type}`).join(", ")}) => Promise<Result<ReturnTypeUnwrapped<typeof ${func.name}>, ${errorType}>>`;
 	});
 
@@ -85,14 +136,11 @@ export function formatRendererIF(
 			})()
 		: "";
 
+	// Resultのimport
 	const resultImport = hasFunctions
 		? unwrapResults
-			? customErrorHandler
-				? 'import { isFailure, type Result, type Failure } from "electron-flow/result";'
-				: 'import { isFailure, type Result } from "electron-flow/result";'
-			: customErrorHandler
-				? 'import type { Result, Failure } from "electron-flow";'
-				: 'import type { Result } from "electron-flow";'
+			? 'import { isFailure, type Result, type UnknownError } from "electron-flow/result";'
+			: 'import type { Result, UnknownError } from "electron-flow";'
 		: "";
 
 	const apiContent =
@@ -122,16 +170,27 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 `
 		: "";
 
-	// カスタムエラーハンドラーがある場合のエラー型ユーティリティ
-	const errorTypeUtilities =
+	// グローバルエラー型ユーティリティ（カスタムエラーハンドラーがある場合）
+	const globalErrorTypeUtility =
 		hasFunctions && customErrorHandler
-			? `// Failureからエラー型を抽出する型ユーティリティ
-type ExtractFailureType<T> = T extends Failure<infer E> ? E : unknown;
-type ErrorType = ExtractFailureType<ReturnType<typeof ${customErrorHandler.functionName}>>;
+			? `// グローバルエラーハンドラーの型（生の値を返す）
+type GlobalErrorType = ReturnType<typeof ${customErrorHandler.functionName}>;
 `
 			: "";
 
-	const typeUtilities = baseTypeUtilities + errorTypeUtilities;
+	// 個別エラーハンドラーの型定義（エラーハンドラーを持つ関数ごとに生成）
+	const individualErrorTypeDefinitions =
+		hasFunctions && functionsWithErrorHandler.length > 0
+			? `${functionsWithErrorHandler
+					.map(
+						({ funcName, errorHandlerName }) =>
+							`type ${capitalize(funcName)}ErrorType = NonNullable<ReturnType<typeof ${errorHandlerName}>>;`,
+					)
+					.join("\n")}\n`
+			: "";
+
+	const typeUtilities =
+		baseTypeUtilities + globalErrorTypeUtility + individualErrorTypeDefinitions;
 
 	const interfaceDefinition = hasFunctions
 		? `

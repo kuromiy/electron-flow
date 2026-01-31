@@ -1,6 +1,6 @@
 // auto generated
 import type { getData } from "../../../fixture/003-unwrap-results/input/apis/sample.js";
-import { isFailure, type Result } from "electron-flow/result";
+import { isFailure, type Result, type UnknownError } from "electron-flow/result";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,7 +13,7 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            getData: (id: string) => Promise<Result<ReturnTypeUnwrapped<typeof getData>, unknown>>;
+            getData: (id: string) => Promise<Result<ReturnTypeUnwrapped<typeof getData>, UnknownError>>;
         };
     }
 }

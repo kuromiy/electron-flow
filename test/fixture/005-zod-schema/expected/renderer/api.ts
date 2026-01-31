@@ -1,6 +1,6 @@
 // auto generated
 import type { createUser } from "../../../fixture/005-zod-schema/input/apis/sample.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
+            createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, unknown>>;
+    createUser: (username: string, email: string, age: number) => Promise<Result<ReturnTypeUnwrapped<typeof createUser>, UnknownError>>;
 }
 
 // サービス実装クラス

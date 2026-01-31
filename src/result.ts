@@ -29,3 +29,24 @@ export function isFailure<T, E = Error>(
 ): result is Failure<E> {
 	return result._tag === "failure";
 }
+
+/**
+ * エラーハンドラーが処理できなかったエラーをラップする型
+ */
+export type UnknownError = {
+	_tag: "UnknownError";
+	value: unknown;
+};
+
+export function unknownError(value: unknown): UnknownError {
+	return { _tag: "UnknownError", value };
+}
+
+export function isUnknownError(error: unknown): error is UnknownError {
+	return (
+		typeof error === "object" &&
+		error !== null &&
+		"_tag" in error &&
+		(error as UnknownError)._tag === "UnknownError"
+	);
+}

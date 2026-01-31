@@ -1,6 +1,6 @@
 // auto generated
 import type { updateItem } from "../../../fixture/006-optional-props/input/apis/sample.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, unknown>>;
+            updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, unknown>>;
+    updateItem: (id: string, name: string | undefined, description: string | undefined) => Promise<Result<ReturnTypeUnwrapped<typeof updateItem>, UnknownError>>;
 }
 
 // サービス実装クラス
