@@ -1,6 +1,6 @@
 // auto generated
 import type { updateRecord, updateRecordErrorHandler } from "../../../fixture/012-validator-and-error-handler/input/apis/sample.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -14,14 +14,14 @@ type UpdateRecordErrorType = NonNullable<ReturnType<typeof updateRecordErrorHand
 declare global {
     interface Window {
         api: {
-            updateRecord: (id: string, value: number) => Promise<Result<ReturnTypeUnwrapped<typeof updateRecord>, UpdateRecordErrorType | unknown>>;
+            updateRecord: (id: string, value: number) => Promise<Result<ReturnTypeUnwrapped<typeof updateRecord>, UpdateRecordErrorType | UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    updateRecord: (id: string, value: number) => Promise<Result<ReturnTypeUnwrapped<typeof updateRecord>, UpdateRecordErrorType | unknown>>;
+    updateRecord: (id: string, value: number) => Promise<Result<ReturnTypeUnwrapped<typeof updateRecord>, UpdateRecordErrorType | UnknownError>>;
 }
 
 // サービス実装クラス

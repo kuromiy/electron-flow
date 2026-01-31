@@ -1,6 +1,6 @@
 // auto generated
 import type { createItem } from "../../../fixture/010-validator-config/input/apis/sample.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            createItem: (name: string, price: number) => Promise<Result<ReturnTypeUnwrapped<typeof createItem>, unknown>>;
+            createItem: (name: string, price: number) => Promise<Result<ReturnTypeUnwrapped<typeof createItem>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    createItem: (name: string, price: number) => Promise<Result<ReturnTypeUnwrapped<typeof createItem>, unknown>>;
+    createItem: (name: string, price: number) => Promise<Result<ReturnTypeUnwrapped<typeof createItem>, UnknownError>>;
 }
 
 // サービス実装クラス

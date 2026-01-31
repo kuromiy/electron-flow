@@ -63,17 +63,18 @@ export function formatRendererIF(
 			// 個別エラーハンドラーあり
 			const individualType = `${capitalize(func.name)}ErrorType`;
 			if (customErrorHandler) {
-				// 個別 + グローバル → union型
-				return `${individualType} | GlobalErrorType`;
+				// 個別 + グローバル → union型（フォールバック時はUnknownError）
+				return `${individualType} | GlobalErrorType | UnknownError`;
 			}
-			// 個別のみ → union with unknown
-			return `${individualType} | unknown`;
+			// 個別のみ → union with UnknownError
+			return `${individualType} | UnknownError`;
 		}
 		// 個別なし
 		if (customErrorHandler) {
-			return "GlobalErrorType";
+			// グローバルのみ → union with UnknownError（ハンドラーエラー時）
+			return "GlobalErrorType | UnknownError";
 		}
-		return "unknown";
+		return "UnknownError";
 	};
 
 	// インターフェース定義
@@ -135,11 +136,11 @@ export function formatRendererIF(
 			})()
 		: "";
 
-	// Resultのimport（Failureは不要になった）
+	// Resultのimport
 	const resultImport = hasFunctions
 		? unwrapResults
-			? 'import { isFailure, type Result } from "electron-flow/result";'
-			: 'import type { Result } from "electron-flow";'
+			? 'import { isFailure, type Result, type UnknownError } from "electron-flow/result";'
+			: 'import type { Result, UnknownError } from "electron-flow";'
 		: "";
 
 	const apiContent =

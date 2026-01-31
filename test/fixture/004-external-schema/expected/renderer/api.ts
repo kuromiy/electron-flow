@@ -1,6 +1,6 @@
 // auto generated
 import type { getUser } from "../../../fixture/004-external-schema/input/apis/user-api.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, unknown>>;
+            getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, unknown>>;
+    getUser: (userId: string, email: string) => Promise<Result<ReturnTypeUnwrapped<typeof getUser>, UnknownError>>;
 }
 
 // サービス実装クラス

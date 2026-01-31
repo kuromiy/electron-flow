@@ -94,7 +94,7 @@ export function formatHandlers(
                     }
                     return failure(${customErrorHandler.functionName}(e, { ...ctx, event }));
                 } catch (handlerError) {
-                    ${warnCode}return failure(e);
+                    ${warnCode}return failure(unknownError(e));
                 }`;
 			}
 			// 個別のみ（グローバルなし）
@@ -103,9 +103,9 @@ export function formatHandlers(
                     if (individualResult !== null) {
                         return failure(individualResult);
                     }
-                    return failure(e);
+                    return failure(unknownError(e));
                 } catch (handlerError) {
-                    ${warnCode}return failure(e);
+                    ${warnCode}return failure(unknownError(e));
                 }`;
 		}
 		// グローバルのみまたはどちらもなし
@@ -113,10 +113,10 @@ export function formatHandlers(
 			return `try {
                     return failure(${customErrorHandler.functionName}(e, { ...ctx, event }));
                 } catch (handlerError) {
-                    ${warnCode}return failure(e);
+                    ${warnCode}return failure(unknownError(e));
                 }`;
 		}
-		return `return failure(e);`;
+		return `return failure(unknownError(e));`;
 	};
 
 	const handlerStatements = packageInfos.flatMap((pkg) => {
@@ -203,7 +203,7 @@ export function formatHandlers(
 	);
 	const electronFlowImports =
 		hasHandlers || customErrorHandler || hasIndividualErrorHandler
-			? '\nimport { success, failure } from "electron-flow";'
+			? '\nimport { success, failure, unknownError } from "electron-flow";'
 			: "";
 
 	const text = `// auto generated

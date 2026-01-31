@@ -1,6 +1,6 @@
 // auto generated
 import type { included } from "../../../fixture/009-ignores/input/apis/sample.js";
-import type { Result } from "electron-flow";
+import type { Result, UnknownError } from "electron-flow";
 
 // Promise を外す型ユーティリティ
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
@@ -13,14 +13,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
 declare global {
     interface Window {
         api: {
-            included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, unknown>>;
+            included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, UnknownError>>;
         };
     }
 }
 
 // サービスインターフェース
 export interface ServiceIF {
-    included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, unknown>>;
+    included: () => Promise<Result<ReturnTypeUnwrapped<typeof included>, UnknownError>>;
 }
 
 // サービス実装クラス
