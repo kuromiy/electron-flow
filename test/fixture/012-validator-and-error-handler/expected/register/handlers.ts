@@ -13,11 +13,15 @@ export const autoGenerateHandlers = {
                 const result = await updateRecord({ ...ctx, event }, validatedArgs);
                 return success(result);
             } catch (e) {
-                const individualResult = updateRecordErrorHandler(e, { ...ctx, event });
-                if (individualResult !== null) {
-                    return failure(individualResult);
+                try {
+                    const individualResult = updateRecordErrorHandler(e, { ...ctx, event });
+                    if (individualResult !== null) {
+                        return failure(individualResult);
+                    }
+                    return failure(e);
+                } catch (handlerError) {
+                    return failure(e);
                 }
-                return failure(e);
             }
         };
     },

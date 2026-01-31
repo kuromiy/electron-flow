@@ -1,5 +1,5 @@
 // auto generated
-import type { processData } from "../../../fixture/008-custom-error-handler/input/apis/sample.js";
+import type { processData, saveData, saveDataErrorHandler } from "../../../fixture/014-custom-and-individual-error-handler/input/apis/sample.js";
 import type { handleError } from "../../../fixture/_shared/error-handler.js";
 import type { Result } from "electron-flow";
 
@@ -11,12 +11,14 @@ type ReturnTypeUnwrapped<T> = T extends (...args: infer _Args) => infer R
     : never;
 // グローバルエラーハンドラーの型（生の値を返す）
 type GlobalErrorType = ReturnType<typeof handleError>;
+type SaveDataErrorType = NonNullable<ReturnType<typeof saveDataErrorHandler>>;
 
 // window.api の型定義
 declare global {
     interface Window {
         api: {
             processData: (data: string) => Promise<Result<ReturnTypeUnwrapped<typeof processData>, GlobalErrorType>>;
+            saveData: (data: string) => Promise<Result<ReturnTypeUnwrapped<typeof saveData>, SaveDataErrorType | GlobalErrorType>>;
         };
     }
 }
@@ -24,11 +26,16 @@ declare global {
 // サービスインターフェース
 export interface ServiceIF {
     processData: (data: string) => Promise<Result<ReturnTypeUnwrapped<typeof processData>, GlobalErrorType>>;
+    saveData: (data: string) => Promise<Result<ReturnTypeUnwrapped<typeof saveData>, SaveDataErrorType | GlobalErrorType>>;
 }
 
 // サービス実装クラス
 export class ApiService implements ServiceIF {
     async processData(data: string) {
         return window.api.processData(data);
+    }
+
+    async saveData(data: string) {
+        return window.api.saveData(data);
     }
 }

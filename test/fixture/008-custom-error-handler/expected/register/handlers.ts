@@ -13,7 +13,11 @@ export const autoGenerateHandlers = {
                 const result = await processData({ ...ctx, event }, args);
                 return success(result);
             } catch (e) {
-                return handleError(e, { ...ctx, event });
+                try {
+                    return failure(handleError(e, { ...ctx, event }));
+                } catch (handlerError) {
+                    return failure(e);
+                }
             }
         };
     },

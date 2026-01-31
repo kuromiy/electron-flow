@@ -1,5 +1,4 @@
 import type { Context } from "./context.js";
-import type { Failure } from "../../src/result.js";
 
 export interface AppError {
 	code: string;
@@ -8,13 +7,10 @@ export interface AppError {
 
 export function handleError(
 	error: unknown,
-	ctx: Context & { event: unknown },
-): Failure<AppError> {
+	_ctx: Context & { event: unknown },
+): AppError {
 	return {
-		_tag: "failure",
-		value: {
-			code: "UNKNOWN_ERROR",
-			message: error instanceof Error ? error.message : "Unknown error",
-		},
+		code: "UNKNOWN_ERROR",
+		message: error instanceof Error ? error.message : "Unknown error",
 	};
 }
